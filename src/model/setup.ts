@@ -21,8 +21,8 @@ const START: Record<Faction, { gold: number; army: Army; garrison: Army }> = {
     garrison: { soldiers: 30, knights: 3, catapults: 0 },
   },
   norman: {
-    gold: 20,
-    army: { soldiers: 25, knights: 5, catapults: 0 },
+    gold: 15,
+    army: { soldiers: 22, knights: 4, catapults: 0 },
     garrison: { soldiers: 35, knights: 5, catapults: 0 },
   },
 };

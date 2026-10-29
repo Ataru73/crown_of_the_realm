@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { applyCasualties, strength } from '../src/model/army';
-import { castleBonus, resolveBattle, type BattleInput } from '../src/model/combat';
+import {
+  autoTactic,
+  availableTactics,
+  castleBonus,
+  fightRound,
+  resolveBattle,
+  startBattle,
+  type BattleInput,
+} from '../src/model/combat';
+import { RuleError } from '../src/model/types';
 import { Rng } from '../src/model/rng';
 
 const army = (soldiers: number, knights = 0, catapults = 0) => ({ soldiers, knights, catapults });
@@ -19,14 +28,19 @@ describe('applyCasualties', () => {
   it('never goes negative', () => {
     expect(applyCasualties(army(3, 1), 1000)).toEqual(army(0, 0));
   });
+
+  it('kills knights first when they lead a charge', () => {
+    expect(applyCasualties(army(10, 2), 4, true)).toEqual(army(10, 0));
+    expect(applyCasualties(army(10, 2), 3, true)).toEqual(army(10, 1));
+  });
 });
 
 describe('castleBonus', () => {
-  it('is 1 without a castle and drops with catapults down to 1', () => {
+  it('is 1 without a castle and drops with catapults down to 1.5', () => {
     expect(castleBonus(false, 0)).toBe(1);
     expect(castleBonus(true, 0)).toBe(3);
     expect(castleBonus(true, 2)).toBe(2);
-    expect(castleBonus(true, 10)).toBe(1);
+    expect(castleBonus(true, 10)).toBe(1.5);
   });
 });
 
@@ -86,5 +100,57 @@ describe('resolveBattle', () => {
     }
     expect(losses).toBeGreaterThan(50);
     expect(retreats).toBeGreaterThan(losses * 0.9);
+  });
+});
+
+describe('round-by-round battle', () => {
+  const input: BattleInput = {
+    attacker: army(40, 6, 2),
+    defender: army(40),
+    attackerLeadership: 3,
+    defenderLeadership: 3,
+    castle: true,
+  };
+
+  it('offers charge only with knights and bombard only at a castle with catapults', () => {
+    expect(availableTactics(startBattle(input))).toEqual(['advance', 'charge', 'bombard', 'retreat']);
+    expect(availableTactics(startBattle({ ...input, castle: false }))).toEqual(['advance', 'charge', 'retreat']);
+    expect(availableTactics(startBattle({ ...input, attacker: army(40) }))).toEqual(['advance', 'retreat']);
+  });
+
+  it('reports losses each round and refuses moves after the end', () => {
+    const b = startBattle(input);
+    const report = fightRound(b, 'advance', new Rng(1));
+    expect(b.round).toBe(1);
+    expect(report.attackerLosses.soldiers + report.attackerLosses.knights).toBeGreaterThan(0);
+    expect(report.defenderLosses.soldiers).toBeGreaterThan(0);
+    fightRound(b, 'retreat', new Rng(1));
+    expect(b.over).toBe(true);
+    expect(b.attackerWon).toBe(false);
+    expect(() => fightRound(b, 'advance', new Rng(1))).toThrow(RuleError);
+  });
+
+  it('charging costs knights first; bombarding draws little return fire', () => {
+    const charge = fightRound(startBattle(input), 'charge', new Rng(4));
+    expect(charge.attackerLosses.knights).toBeGreaterThan(0);
+    expect(charge.attackerLosses.soldiers).toBe(0);
+
+    const advance = fightRound(startBattle(input), 'advance', new Rng(4));
+    const bombard = fightRound(startBattle(input), 'bombard', new Rng(4));
+    expect(bombard.attackerLosses.soldiers).toBeLessThan(advance.attackerLosses.soldiers);
+  });
+
+  it('is over before it starts against an empty territory', () => {
+    const b = startBattle({ ...input, defender: army(0) });
+    expect(b.over).toBe(true);
+    expect(b.attackerWon).toBe(true);
+  });
+
+  it('resolveBattle plays autoTactic each round', () => {
+    const b = startBattle({ ...input, castle: false });
+    const rng = new Rng(11);
+    while (!b.over) fightRound(b, autoTactic(b), rng);
+    const auto = resolveBattle({ ...input, castle: false }, new Rng(11));
+    expect(auto).toEqual({ attackerWon: b.attackerWon, attacker: b.attacker, defender: b.defender, rounds: b.round });
   });
 });

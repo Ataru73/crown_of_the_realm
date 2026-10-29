@@ -1,6 +1,6 @@
-import { applyCasualties, strength } from './army';
+import { applyCasualties, armyLosses, KNIGHT_POWER, strength } from './army';
 import type { Rng } from './rng';
-import type { Army } from './types';
+import { RuleError, type Army } from './types';
 
 export interface BattleInput {
   attacker: Army;
@@ -18,39 +18,133 @@ export interface BattleResult {
   rounds: number;
 }
 
+/**
+ * The attacker's choice each round:
+ * - advance: an even exchange of blows
+ * - charge: knights strike twice as hard but lead, so they fall first and take more return fire
+ * - bombard: catapults fire over castle walls with little return fire (sieges only)
+ * - retreat: withdraw with the survivors
+ */
+export type Tactic = 'advance' | 'charge' | 'bombard' | 'retreat';
+
+/** A battle in progress; advanced one round at a time by fightRound. */
+export interface Battle extends BattleInput {
+  /** Wall factor dividing damage dealt to the defenders. */
+  bonus: number;
+  startStrength: number;
+  round: number;
+  over: boolean;
+  attackerWon: boolean;
+}
+
+export interface RoundReport {
+  tactic: Tactic;
+  attackerLosses: Army;
+  defenderLosses: Army;
+}
+
 /** Share of a side's power dealt as damage each round. */
 const DAMAGE_RATE = 0.1;
-/** The attacker retreats when reduced below this share of its starting strength. */
+/** The automatic attacker retreats when reduced below this share of its starting strength. */
 const RETREAT_AT = 0.25;
 const MAX_ROUNDS = 100;
+const CHARGE_RETURN_FIRE = 1.2;
+const CATAPULT_DAMAGE = 4;
+const BOMBARD_RETURN_FIRE = 0.3;
 
-/** Castle walls divide damage taken by defenders; each catapult knocks some of that off. */
+/** Castle walls divide damage taken by defenders; each catapult knocks some of that off, down to a floor. */
 export function castleBonus(castle: boolean, catapults: number): number {
-  return castle ? Math.max(1, 3 - 0.5 * catapults) : 1;
+  return castle ? Math.max(1.5, 3 - 0.5 * catapults) : 1;
 }
 
-function power(army: Army, leadership: number): number {
-  return strength(army) * (1 + 0.1 * leadership);
+function leadershipFactor(leadership: number): number {
+  return 1 + 0.1 * leadership;
 }
 
-/** Auto-resolves a battle round by round. */
-export function resolveBattle(input: BattleInput, rng: Rng): BattleResult {
-  let attacker = input.attacker;
-  let defender = input.defender;
-  const startStrength = strength(attacker);
-  const bonus = castleBonus(input.castle, attacker.catapults);
-
-  for (let round = 1; round <= MAX_ROUNDS; round++) {
-    if (strength(defender) === 0) {
-      return { attackerWon: strength(attacker) > 0, attacker, defender, rounds: round - 1 };
-    }
-    if (strength(attacker) < startStrength * RETREAT_AT) {
-      return { attackerWon: false, attacker, defender, rounds: round - 1 };
-    }
-    const toDefender = (power(attacker, input.attackerLeadership) * DAMAGE_RATE * (0.5 + rng.next())) / bonus;
-    const toAttacker = power(defender, input.defenderLeadership) * DAMAGE_RATE * (0.5 + rng.next());
-    defender = applyCasualties(defender, Math.max(1, toDefender));
-    attacker = applyCasualties(attacker, Math.max(1, toAttacker));
+function checkEnd(b: Battle): void {
+  if (strength(b.defender) === 0) {
+    b.over = true;
+    b.attackerWon = strength(b.attacker) > 0;
+  } else if (strength(b.attacker) === 0 || b.round >= MAX_ROUNDS) {
+    b.over = true;
+    b.attackerWon = false;
   }
-  return { attackerWon: false, attacker, defender, rounds: MAX_ROUNDS };
+}
+
+export function startBattle(input: BattleInput): Battle {
+  const battle: Battle = {
+    ...input,
+    bonus: castleBonus(input.castle, input.attacker.catapults),
+    startStrength: strength(input.attacker),
+    round: 0,
+    over: false,
+    attackerWon: false,
+  };
+  checkEnd(battle);
+  return battle;
+}
+
+export function availableTactics(b: Battle): Tactic[] {
+  const tactics: Tactic[] = ['advance'];
+  if (b.attacker.knights > 0) tactics.push('charge');
+  if (b.castle && b.attacker.catapults > 0) tactics.push('bombard');
+  tactics.push('retreat');
+  return tactics;
+}
+
+/** Fights one round with the attacker's chosen tactic. */
+export function fightRound(b: Battle, tactic: Tactic, rng: Rng): RoundReport {
+  if (b.over) throw new RuleError('The battle is over');
+  if (!availableTactics(b).includes(tactic)) throw new RuleError(`Cannot ${tactic} now`);
+  const attackerBefore = b.attacker;
+  const defenderBefore = b.defender;
+
+  if (tactic === 'retreat') {
+    b.over = true;
+    b.attackerWon = false;
+  } else {
+    b.round += 1;
+    const attackLead = leadershipFactor(b.attackerLeadership);
+    const roll = 0.5 + rng.next();
+    const returnFire = strength(b.defender) * leadershipFactor(b.defenderLeadership) * DAMAGE_RATE * (0.5 + rng.next());
+
+    let toDefender: number;
+    let toAttacker: number;
+    if (tactic === 'charge') {
+      const chargePower = strength(b.attacker) + b.attacker.knights * KNIGHT_POWER;
+      toDefender = (chargePower * attackLead * DAMAGE_RATE * roll) / b.bonus;
+      toAttacker = returnFire * CHARGE_RETURN_FIRE;
+    } else if (tactic === 'bombard') {
+      toDefender = b.attacker.catapults * CATAPULT_DAMAGE * roll;
+      toAttacker = returnFire * BOMBARD_RETURN_FIRE;
+    } else {
+      toDefender = (strength(b.attacker) * attackLead * DAMAGE_RATE * roll) / b.bonus;
+      toAttacker = returnFire;
+    }
+    b.defender = applyCasualties(b.defender, Math.max(1, toDefender));
+    b.attacker = applyCasualties(b.attacker, Math.max(1, toAttacker), tactic === 'charge');
+    checkEnd(b);
+  }
+
+  return {
+    tactic,
+    attackerLosses: armyLosses(attackerBefore, b.attacker),
+    defenderLosses: armyLosses(defenderBefore, b.defender),
+  };
+}
+
+/** What the automatic attacker does: advance until badly mauled, then retreat. */
+export function autoTactic(b: Battle): Tactic {
+  return strength(b.attacker) < b.startStrength * RETREAT_AT ? 'retreat' : 'advance';
+}
+
+export function battleResult(b: Battle): BattleResult {
+  return { attackerWon: b.attackerWon, attacker: b.attacker, defender: b.defender, rounds: b.round };
+}
+
+/** Auto-resolves a whole battle. */
+export function resolveBattle(input: BattleInput, rng: Rng): BattleResult {
+  const battle = startBattle(input);
+  while (!battle.over) fightRound(battle, autoTactic(battle), rng);
+  return battleResult(battle);
 }

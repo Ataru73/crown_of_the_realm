@@ -3,8 +3,11 @@ import {
   applyRaid,
   applyTournament,
   attackableTerritories,
+  battleInput,
   conquer,
   joustChance,
+  march,
+  marchableTerritories,
 } from '../src/model/actions';
 import { neighbours } from '../src/model/map';
 import { Rng } from '../src/model/rng';
@@ -46,7 +49,7 @@ describe('conquer', () => {
     expect(() => conquer(s, 'player', 'kent', new Rng(1))).toThrow(RuleError);
   });
 
-  it('eliminates a lord whose home falls and hands over their land and gold', () => {
+  it('eliminates a lord whose home falls: the winner takes the gold, the rest of the land revolts', () => {
     const s = game();
     s.territories.york.owner = 'osric';
     s.lords.osric.gold = 30;
@@ -60,7 +63,7 @@ describe('conquer', () => {
 
     expect(s.lords.osric.alive).toBe(false);
     expect(s.territories.northumbria.owner).toBe('player');
-    expect(s.territories.york.owner).toBe('player');
+    expect(s.territories.york.owner).toBeNull();
     expect(s.lords.player.gold).toBe(goldBefore + 30);
   });
 
@@ -82,6 +85,35 @@ describe('conquer', () => {
     lost.territories.cumbria.owner = 'osric';
     conquer(lost, 'osric', 'lancaster', new Rng(1));
     expect(lost.status).toBe('lost');
+  });
+});
+
+describe('conquer with a battle fought on screen', () => {
+  it('applies the given result instead of rolling a new battle', () => {
+    const s = game();
+    const input = battleInput(s, 'player', 'cumbria');
+    const result = { attackerWon: true, attacker: { ...input.attacker, soldiers: 1 }, defender: input.defender, rounds: 7 };
+    const rngState = new Rng(1).state;
+    const rng = new Rng(1);
+    expect(conquer(s, 'player', 'cumbria', rng, result)).toBe(result);
+    expect(rng.state).toBe(rngState);
+    expect(s.territories.cumbria.owner).toBe('player');
+    expect(s.lords.player.army.soldiers).toBe(1);
+  });
+});
+
+describe('march', () => {
+  it('moves the army through connected own land only', () => {
+    const s = game();
+    s.territories.cumbria.owner = 'player';
+    s.territories.york.owner = 'player';
+    s.territories.lincoln.owner = 'player';
+    s.territories.chester.owner = 'player';
+    s.territories.hereford.owner = 'leofric';
+    expect(marchableTerritories(s, 'player').sort()).toEqual(['chester', 'cumbria', 'lincoln', 'york']);
+    march(s, 'player', 'lincoln');
+    expect(s.lords.player.armyAt).toBe('lincoln');
+    expect(() => march(s, 'player', 'kent')).toThrow(RuleError);
   });
 });
 

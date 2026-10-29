@@ -44,10 +44,11 @@ export function garrisonCap(territory: Territory): number {
   return territoryDef(territory.id).income * (territory.castle ? 6 : 3);
 }
 
-/** Each territory raises one vassal soldier a month, up to its cap. */
+/** Each territory raises one vassal soldier a month (two with a castle), up to its cap. */
 export function growGarrisons(state: GameState): void {
   for (const t of Object.values(state.territories)) {
-    if (t.garrison.soldiers < garrisonCap(t)) t.garrison.soldiers += 1;
+    const cap = garrisonCap(t);
+    if (t.garrison.soldiers < cap) t.garrison.soldiers = Math.min(cap, t.garrison.soldiers + (t.castle ? 2 : 1));
   }
 }
 

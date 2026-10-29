@@ -1,5 +1,5 @@
 import { addArmies, emptyArmy, strength } from './army';
-import { resolveBattle, type BattleResult } from './combat';
+import { resolveBattle, type BattleInput, type BattleResult } from './combat';
 import { garrisonCap } from './economy';
 import { neighbours, territoryDef } from './map';
 import type { Rng } from './rng';
@@ -11,7 +11,9 @@ export type Stake = 'fame' | 'land';
 /** The one main action a lord takes each month (buying troops is free). */
 export type Action =
   | { type: 'pass' }
-  | { type: 'conquer'; target: TerritoryId }
+  | { type: 'march'; target: TerritoryId }
+  /** `result`: a battle already fought in the battle scene; auto-resolved when absent. */
+  | { type: 'conquer'; target: TerritoryId; result?: BattleResult }
   | { type: 'raid'; target: LordId }
   | { type: 'tournament'; opponent: LordId; stake: Stake };
 
@@ -45,6 +47,33 @@ export function attackableTerritories(state: GameState, lordId: LordId): Territo
   return [...targets];
 }
 
+/** Own territories the campaign army can march to: those connected to where it stands. */
+export function marchableTerritories(state: GameState, lordId: LordId): TerritoryId[] {
+  const lord = state.lords[lordId];
+  if (!lord.alive) return [];
+  const reached = new Set([lord.armyAt]);
+  const queue = [lord.armyAt];
+  while (queue.length > 0) {
+    for (const n of neighbours(queue.shift()!)) {
+      if (state.territories[n].owner === lordId && !reached.has(n)) {
+        reached.add(n);
+        queue.push(n);
+      }
+    }
+  }
+  reached.delete(lord.armyAt);
+  return [...reached];
+}
+
+export function march(state: GameState, lordId: LordId, target: TerritoryId): void {
+  if (!marchableTerritories(state, lordId).includes(target)) {
+    throw new RuleError(`Cannot march to ${target}`);
+  }
+  const lord = state.lords[lordId];
+  lord.armyAt = target;
+  addLog(state, `${lord.name} marches to ${territoryDef(target).name}.`);
+}
+
 /** Garrison plus the owner's campaign army if it stands there. */
 export function defendingArmy(state: GameState, territoryId: TerritoryId): Army {
   const territory = state.territories[territoryId];
@@ -59,21 +88,52 @@ function regroupArmies(state: GameState): void {
   }
 }
 
-/** The loser's castle has fallen: the winner takes all their land and gold. */
+/**
+ * The loser's castle has fallen: the winner seizes their treasury, and the
+ * rest of their lands revolt and fall back to their own vassals.
+ */
 function eliminate(state: GameState, loserId: LordId, winnerId: LordId): void {
   const loser = state.lords[loserId];
   const winner = state.lords[winnerId];
   for (const t of Object.values(state.territories)) {
-    if (t.owner === loserId) t.owner = winnerId;
+    if (t.owner === loserId) t.owner = null;
   }
   winner.gold += loser.gold;
   loser.gold = 0;
   loser.army = emptyArmy();
   loser.alive = false;
-  addLog(state, `${loser.name} is defeated! ${winner.name} takes all their lands.`);
+  addLog(state, `${loser.name} is defeated! ${winner.name} seizes their treasury; their lands revolt.`);
 }
 
-export function conquer(state: GameState, lordId: LordId, target: TerritoryId, rng: Rng): BattleResult {
+/** The two sides of an attack on `target`, ready for startBattle or resolveBattle. */
+export function battleInput(state: GameState, lordId: LordId, target: TerritoryId): BattleInput {
+  if (!attackableTerritories(state, lordId).includes(target)) {
+    throw new RuleError(`Cannot reach ${target}`);
+  }
+  const lord = state.lords[lordId];
+  const territory = state.territories[target];
+  const owner = territory.owner ? state.lords[territory.owner] : null;
+  return {
+    attacker: lord.army,
+    defender: defendingArmy(state, target),
+    attackerLeadership: lord.stats.leadership,
+    // Leaderless vassals of neutral land fight at a middling level.
+    defenderLeadership: owner?.stats.leadership ?? 2,
+    castle: territory.castle,
+  };
+}
+
+/**
+ * Attacks `target`. The battle is auto-resolved unless `result` is given
+ * (a battle the player fought round by round from battleInput).
+ */
+export function conquer(
+  state: GameState,
+  lordId: LordId,
+  target: TerritoryId,
+  rng: Rng,
+  result: BattleResult = resolveBattle(battleInput(state, lordId, target), rng),
+): BattleResult {
   if (!attackableTerritories(state, lordId).includes(target)) {
     throw new RuleError(`Cannot reach ${target}`);
   }
@@ -83,17 +143,6 @@ export function conquer(state: GameState, lordId: LordId, target: TerritoryId, r
   const ownerArmyHere = owner?.armyAt === target;
   const name = territoryDef(target).name;
 
-  const result = resolveBattle(
-    {
-      attacker: lord.army,
-      defender: defendingArmy(state, target),
-      attackerLeadership: lord.stats.leadership,
-      // Leaderless vassals of neutral land fight at a middling level.
-      defenderLeadership: owner?.stats.leadership ?? 2,
-      castle: territory.castle,
-    },
-    rng,
-  );
   lord.army = result.attacker;
 
   if (result.attackerWon) {
@@ -207,8 +256,11 @@ export function performAction(state: GameState, lordId: LordId, action: Action, 
   switch (action.type) {
     case 'pass':
       return { action };
+    case 'march':
+      march(state, lordId, action.target);
+      return { action };
     case 'conquer': {
-      const battle = conquer(state, lordId, action.target, rng);
+      const battle = conquer(state, lordId, action.target, rng, action.result);
       return { action, won: battle.attackerWon, battle };
     }
     case 'raid': {
