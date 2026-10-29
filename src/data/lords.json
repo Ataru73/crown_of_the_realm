@@ -1,0 +1,15 @@
+{
+  "player": { "id": "player", "home": "lancaster" },
+  "rivals": [
+    { "id": "montclair", "name": "Baron Hugues de Montclair", "faction": "norman", "home": "kent",
+      "stats": { "leadership": 4, "jousting": 3, "swordplay": 3 } },
+    { "id": "osric", "name": "Osric of Bamburgh", "faction": "saxon", "home": "northumbria",
+      "stats": { "leadership": 3, "jousting": 3, "swordplay": 2 } },
+    { "id": "vesci", "name": "Count Robert de Vesci", "faction": "norman", "home": "wessex",
+      "stats": { "leadership": 3, "jousting": 4, "swordplay": 3 } },
+    { "id": "leofric", "name": "Leofric the Old", "faction": "saxon", "home": "hereford",
+      "stats": { "leadership": 2, "jousting": 2, "swordplay": 3 } },
+    { "id": "aubigny", "name": "Lord Geoffrey d'Aubigny", "faction": "norman", "home": "norfolk",
+      "stats": { "leadership": 3, "jousting": 3, "swordplay": 4 } }
+  ]
+}

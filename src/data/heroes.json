@@ -1,0 +1,8 @@
+{
+  "heroes": [
+    { "id": "edwin",   "name": "Edwin of Mercia",   "stats": { "leadership": 4, "jousting": 2, "swordplay": 3 } },
+    { "id": "aldric",  "name": "Aldric the Bold",   "stats": { "leadership": 2, "jousting": 3, "swordplay": 4 } },
+    { "id": "godwin",  "name": "Godwin the Lance",  "stats": { "leadership": 3, "jousting": 4, "swordplay": 2 } },
+    { "id": "wulfric", "name": "Wulfric Greybeard", "stats": { "leadership": 3, "jousting": 3, "swordplay": 3 } }
+  ]
+}

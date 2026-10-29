@@ -1,0 +1,41 @@
+{
+  "territories": [
+    { "id": "northumbria", "name": "Northumbria", "x": 330, "y": 40,  "income": 4 },
+    { "id": "cumbria",     "name": "Cumbria",     "x": 260, "y": 70,  "income": 3 },
+    { "id": "york",        "name": "York",        "x": 360, "y": 110, "income": 6 },
+    { "id": "lancaster",   "name": "Lancaster",   "x": 280, "y": 130, "income": 4 },
+    { "id": "lincoln",     "name": "Lincoln",     "x": 420, "y": 170, "income": 5 },
+    { "id": "derby",       "name": "Derby",       "x": 330, "y": 175, "income": 5 },
+    { "id": "chester",     "name": "Chester",     "x": 260, "y": 185, "income": 4 },
+    { "id": "norfolk",     "name": "Norfolk",     "x": 490, "y": 200, "income": 6 },
+    { "id": "leicester",   "name": "Leicester",   "x": 380, "y": 220, "income": 5 },
+    { "id": "hereford",    "name": "Hereford",    "x": 250, "y": 250, "income": 4 },
+    { "id": "essex",       "name": "Essex",       "x": 450, "y": 260, "income": 7 },
+    { "id": "oxford",      "name": "Oxford",      "x": 360, "y": 270, "income": 6 },
+    { "id": "gloucester",  "name": "Gloucester",  "x": 300, "y": 280, "income": 5 },
+    { "id": "kent",        "name": "Kent",        "x": 470, "y": 320, "income": 7 },
+    { "id": "devon",       "name": "Devon",       "x": 190, "y": 330, "income": 4 },
+    { "id": "wessex",      "name": "Wessex",      "x": 280, "y": 330, "income": 6 },
+    { "id": "sussex",      "name": "Sussex",      "x": 380, "y": 340, "income": 6 },
+    { "id": "cornwall",    "name": "Cornwall",    "x": 130, "y": 350, "income": 3 }
+  ],
+  "borders": [
+    ["northumbria", "cumbria"], ["northumbria", "york"],
+    ["cumbria", "lancaster"], ["cumbria", "york"],
+    ["york", "lancaster"], ["york", "lincoln"], ["york", "derby"],
+    ["lancaster", "chester"], ["lancaster", "derby"],
+    ["chester", "derby"], ["chester", "hereford"],
+    ["derby", "lincoln"], ["derby", "leicester"],
+    ["lincoln", "norfolk"], ["lincoln", "leicester"],
+    ["norfolk", "essex"], ["norfolk", "leicester"],
+    ["leicester", "oxford"], ["leicester", "essex"],
+    ["hereford", "gloucester"],
+    ["gloucester", "oxford"], ["gloucester", "wessex"],
+    ["oxford", "essex"], ["oxford", "wessex"], ["oxford", "sussex"],
+    ["essex", "kent"],
+    ["kent", "sussex"],
+    ["sussex", "wessex"],
+    ["wessex", "devon"],
+    ["devon", "cornwall"]
+  ]
+}
