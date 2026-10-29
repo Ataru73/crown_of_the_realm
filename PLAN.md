@@ -21,6 +21,7 @@ short arcade minigames in between (jousting, sword fights, sieges, rescuing a la
 | Tests | **Vitest** | Campaign rules (combat, AI, economy) are pure functions and easy to test |
 | Asset tools | **Python 3 + Pillow** (+ `rembg` for cutouts) | Turn Gemini output into game-ready sprites |
 | Asset source | **Gemini** in Chrome via the browser tools | Paintings, portraits, backgrounds, sprite poses |
+| Music source | **Lyria** in the Gemini app, same browser workflow | Looping music per scene, short stings |
 
 Target resolution: **640×400 logical** (2× the Amiga's 320×200), scaled with
 `pixelArt: true` / integer scaling, so the art keeps the painted-but-crisp look.
@@ -127,8 +128,39 @@ differences don't show; for animation use few key poses + tweens (squash, slide,
 flash) instead of many frames.
 
 ### Audio
-Gemini doesn't make audio. Use CC0 medieval tracks / SFX (OpenGameArt, freesound
-CC0) or generate chiptune-style SFX with jsfxr. Credit everything in `CREDITS.md`.
+
+**Music: Lyria in the Gemini app** (via the browser, like the images). One style
+preamble for every track, e.g. *"medieval orchestral game music, 1986 Amiga
+Cinemaware mood, lute, recorder, horns and timpani, loopable, no vocals"*.
+
+| Track | Used in | Mood |
+|---|---|---|
+| `title` | Title, hero select | Heroic main theme |
+| `campaign` | Map scene | Calm, stately, long loop |
+| `tournament` | Joust | Brass fanfare, festive |
+| `battle` | Field battle | Drums, urgent |
+| `siege` | Siege | Heavy, slow percussion |
+| `swordfight` | Raid / rescue | Fast, tense strings |
+| `romance` | Rescue cutscene | Lute and harp, gentle |
+| `victory` / `defeat` | Battle results, game over | Short stings (5–10 s) |
+
+Workflow:
+1. Prompts live in `tools/assets/music-prompts.yaml` next to the image prompts.
+2. Generate in the Gemini app; pick the best take per track; download into
+   `raw-assets/music/<id>.<ext>` (each download is confirmed with the user first).
+3. Process (`tools/assets/music.py`, ffmpeg): trim, crossfade the ends so the
+   track loops cleanly, loudness-normalise (about −16 LUFS), export `.ogg` plus
+   `.mp3` fallback to `public/assets/music/`.
+4. In the game: one music manager that crossfades between tracks on scene change,
+   with a mute toggle remembered in localStorage.
+
+Limits to keep in mind: clips are short (≈30 s), so every track is designed as a
+loop; check the Gemini/Lyria terms for using generated music in a published game
+and note the source in `CREDITS.md`.
+
+**Sound effects:** Lyria is for music, so SFX (lance hit, sword clash, catapult,
+crowd, coins) come from CC0 packs (OpenGameArt, freesound CC0) or jsfxr. Credit
+everything in `CREDITS.md`.
 
 ## 5. Milestones
 
