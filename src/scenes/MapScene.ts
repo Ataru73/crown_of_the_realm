@@ -1,14 +1,14 @@
 import Phaser from 'phaser';
 import { HEIGHT, SceneKeys, WIDTH } from '../config';
 import { session } from '../game/session';
-import { attackableTerritories, marchableTerritories, type Action } from '../model/actions';
+import { attackableTerritories, marchableTerritories, type Action, type Stake } from '../model/actions';
 import { playAiTurn } from '../model/ai';
 import { income, upkeep } from '../model/economy';
 import { territoryDef } from '../model/map';
 import { currentLord } from '../model/state';
 import { dateLabel, playTurn } from '../model/turn';
 import type { BattleResult } from '../model/combat';
-import { RuleError, type Army, type GameState, type TerritoryId } from '../model/types';
+import { RuleError, type Army, type GameState, type LordId, type TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
 import { openBuyDialog } from '../ui/BuyDialog';
 import { showDialog } from '../ui/Dialog';
@@ -23,6 +23,11 @@ function losses(before: Army, after: Army): string {
   const s = before.soldiers - after.soldiers;
   const k = before.knights - after.knights;
   return `Losses: ${s} soldier${s === 1 ? '' : 's'}, ${k} knight${k === 1 ? '' : 's'}.`;
+}
+
+export interface MapSceneData {
+  conquest?: { target: TerritoryId; result: BattleResult };
+  tournament?: { opponent: LordId; stake: Stake; won: boolean };
 }
 
 /** The campaign map: the player's turn happens here, then the AI lords move. */
@@ -42,8 +47,8 @@ export class MapScene extends Phaser.Scene {
     super(SceneKeys.Map);
   }
 
-  /** `conquest`: a battle just fought in the battle scene, to apply as this turn's action. */
-  create(data: { conquest?: { target: TerritoryId; result: BattleResult } } = {}): void {
+  /** A battle or joust just fought in its own scene, to apply as this turn's action. */
+  create(data: MapSceneData = {}): void {
     if (!session.state) {
       this.scene.start(SceneKeys.Title);
       return;
@@ -61,6 +66,7 @@ export class MapScene extends Phaser.Scene {
     if (this.state.status !== 'playing') this.endGame();
     else if (!currentLord(this.state).isPlayer) void this.runAiTurns();
     else if (data.conquest) this.act({ type: 'conquer', ...data.conquest });
+    else if (data.tournament) this.act({ type: 'tournament', ...data.tournament });
   }
 
   private buildPanel(): void {
@@ -70,7 +76,7 @@ export class MapScene extends Phaser.Scene {
     this.lordText = this.add.text(PANEL_X + 10, 30, '', textStyle(11, '#3a2210', { lineSpacing: 2 }));
     this.infoText = this.add.text(PANEL_X + 10, 130, '', textStyle(11, '#3a2210', {
       lineSpacing: 2,
-      wordWrap: { width: WIDTH - PANEL_X - 18 },
+      wordWrap: { width: WIDTH - PANEL_X - 14 },
     }));
 
     const opts = { width: 156, height: 22, fontSize: 13 };
@@ -149,9 +155,9 @@ export class MapScene extends Phaser.Scene {
     const def = territoryDef(t.id);
     const owner = t.owner ? this.state.lords[t.owner] : null;
     const lines = [
-      `${def.name}${t.castle ? ' (castle)' : ''} · ${def.income} gold/month`,
+      `${def.name}${t.castle ? ' (castle)' : ''}`,
       `Held by ${owner ? owner.name : 'no lord'}`,
-      `Garrison ${t.garrison.soldiers} soldiers, ${t.garrison.knights} knights`,
+      `Income ${def.income} · ${t.garrison.soldiers} men, ${t.garrison.knights} knights`,
     ];
     if (owner && !owner.isPlayer) lines.push(`Their gold: ${owner.gold}`);
     return lines.join('\n');
@@ -180,7 +186,7 @@ export class MapScene extends Phaser.Scene {
 
   private joust(stake: 'fame' | 'land'): void {
     const rival = this.selectedRival();
-    if (rival) this.act({ type: 'tournament', opponent: rival.id, stake });
+    if (rival && this.isPlayerTurn()) this.scene.start(SceneKeys.Joust, { opponent: rival.id, stake });
   }
 
   /** Plays the player's main action, reports it, then lets the AI lords move. */

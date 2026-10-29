@@ -15,7 +15,8 @@ export type Action =
   /** `result`: a battle already fought in the battle scene; auto-resolved when absent. */
   | { type: 'conquer'; target: TerritoryId; result?: BattleResult }
   | { type: 'raid'; target: LordId }
-  | { type: 'tournament'; opponent: LordId; stake: Stake };
+  /** `won`: the outcome of the joust minigame; auto-resolved when absent. */
+  | { type: 'tournament'; opponent: LordId; stake: Stake; won?: boolean };
 
 export interface ActionOutcome {
   action: Action;
@@ -214,7 +215,7 @@ export function applyTournament(
   const loser = state.lords[won ? opponentId : lordId];
   winner.fame += stake === 'fame' ? 2 : 1;
   loser.fame = Math.max(0, loser.fame - 1);
-  addLog(state, `${winner.name} unhorses ${loser.name} in the tournament.`);
+  addLog(state, `${winner.name} defeats ${loser.name} in the tournament.`);
 
   if (stake === 'land') {
     const lands = Object.values(state.territories).filter(
@@ -270,7 +271,7 @@ export function performAction(state: GameState, lordId: LordId, action: Action, 
     }
     case 'tournament': {
       requireRival(state, lordId, action.opponent);
-      const won = rng.next() < joustChance(state, lordId, action.opponent);
+      const won = action.won ?? rng.next() < joustChance(state, lordId, action.opponent);
       applyTournament(state, lordId, action.opponent, action.stake, won, rng);
       return { action, won };
     }

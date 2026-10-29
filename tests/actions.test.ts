@@ -11,6 +11,7 @@ import {
 } from '../src/model/actions';
 import { neighbours } from '../src/model/map';
 import { Rng } from '../src/model/rng';
+import { playTurn } from '../src/model/turn';
 import { RuleError } from '../src/model/types';
 import { game } from './helpers';
 
@@ -139,6 +140,16 @@ describe('tournament', () => {
     applyTournament(s, 'player', 'osric', 'land', true, new Rng(1));
     expect(s.territories.northumbria.owner).toBe('osric');
     expect(s.lords.player.fame).toBe(1);
+  });
+
+  it('uses the minigame outcome when given, without rolling dice', () => {
+    const s = game();
+    s.lords.osric.stats.jousting = 5;
+    s.lords.player.stats.jousting = 1;
+    const before = s.rngState;
+    playTurn(s, { type: 'tournament', opponent: 'osric', stake: 'fame', won: true });
+    expect(s.lords.player.fame).toBe(2);
+    expect(s.rngState).toBe(before);
   });
 
   it('rejects dead or self opponents', () => {
