@@ -5,6 +5,10 @@ const LOG_LIMIT = 100;
 
 export function addLog(state: GameState, message: string): void {
   state.log.push(message);
+}
+
+/** Keeps only the latest log lines; called once per turn so a turn's own lines can be read first. */
+export function trimLog(state: GameState): void {
   if (state.log.length > LOG_LIMIT) state.log.splice(0, state.log.length - LOG_LIMIT);
 }
 

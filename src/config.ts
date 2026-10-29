@@ -5,6 +5,7 @@ export const HEIGHT = 400;
 export const SceneKeys = {
   Boot: 'Boot',
   Title: 'Title',
+  HeroSelect: 'HeroSelect',
   Map: 'Map',
   Joust: 'Joust',
   Sword: 'Sword',

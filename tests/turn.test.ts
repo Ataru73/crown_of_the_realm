@@ -44,6 +44,17 @@ describe('turn loop', () => {
     expect(currentLord(s).id).toBe('osric');
   });
 
+  it('reports the messages written during the turn and keeps the log bounded', () => {
+    const s = game();
+    s.log = Array.from({ length: 100 }, (_, i) => `old ${i}`);
+    s.lords.player.army = { soldiers: 200, knights: 20, catapults: 0 };
+    const result = playTurn(s, { type: 'conquer', target: 'cumbria' });
+    expect(result.lordId).toBe('player');
+    expect(result.messages).toEqual([`${s.lords.player.name} conquers Cumbria.`]);
+    expect(s.log).toHaveLength(100);
+    expect(s.log.at(-1)).toBe(result.messages[0]);
+  });
+
   it('refuses to play once the game is over', () => {
     const s = game();
     s.status = 'lost';

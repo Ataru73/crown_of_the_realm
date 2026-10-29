@@ -1,8 +1,8 @@
 import { performAction, type Action, type ActionOutcome } from './actions';
 import { collectIncome, growGarrisons } from './economy';
 import { Rng } from './rng';
-import { addLog, currentLord } from './state';
-import { RuleError, type GameState } from './types';
+import { addLog, currentLord, trimLog } from './state';
+import { RuleError, type GameState, type LordId } from './types';
 
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -41,12 +41,21 @@ export function withRng<T>(state: GameState, fn: (rng: Rng) => T): T {
   return result;
 }
 
+export interface TurnResult extends ActionOutcome {
+  lordId: LordId;
+  /** Log lines written during this turn. */
+  messages: string[];
+}
+
 /** The current lord performs their main action, then the turn passes on. */
-export function playTurn(state: GameState, action: Action): ActionOutcome {
+export function playTurn(state: GameState, action: Action): TurnResult {
   if (state.status !== 'playing') throw new RuleError('The game is over');
   const lord = currentLord(state);
+  const logStart = state.log.length;
   const outcome = withRng(state, (rng) => performAction(state, lord.id, action, rng));
   if (action.type === 'pass') addLog(state, `${lord.name} rests.`);
   if (state.status === 'playing') endTurn(state);
-  return outcome;
+  const messages = state.log.slice(logStart);
+  trimLog(state);
+  return { ...outcome, lordId: lord.id, messages };
 }

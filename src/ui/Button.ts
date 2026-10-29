@@ -1,27 +1,61 @@
 import Phaser from 'phaser';
+import { COLORS, textStyle } from './theme';
+
+export interface ButtonOptions {
+  width?: number;
+  height?: number;
+  fontSize?: number;
+}
 
 /** Placeholder button: parchment-colored box with a label. */
+export class Button extends Phaser.GameObjects.Container {
+  private readonly bg: Phaser.GameObjects.Rectangle;
+  private readonly label: Phaser.GameObjects.Text;
+  private enabled = true;
+
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    label: string,
+    onClick: () => void,
+    { width = 180, height = 28, fontSize = 15 }: ButtonOptions = {},
+  ) {
+    super(scene, x, y);
+    this.bg = scene.add.rectangle(0, 0, width, height, COLORS.parchment).setStrokeStyle(2, COLORS.border);
+    this.label = scene.add.text(0, 0, label, textStyle(fontSize)).setOrigin(0.5);
+    this.add([this.bg, this.label]);
+    this.setSize(width, height);
+    this.setInteractive({ useHandCursor: true })
+      .on('pointerover', () => this.bg.setFillStyle(COLORS.parchmentLight))
+      .on('pointerout', () => this.bg.setFillStyle(COLORS.parchment))
+      .on('pointerup', onClick);
+    scene.add.existing(this);
+  }
+
+  setLabel(label: string): this {
+    this.label.setText(label);
+    return this;
+  }
+
+  setEnabled(enabled: boolean): this {
+    if (enabled === this.enabled) return this;
+    this.enabled = enabled;
+    this.setAlpha(enabled ? 1 : 0.4);
+    this.bg.setFillStyle(COLORS.parchment);
+    if (enabled) this.setInteractive();
+    else this.disableInteractive();
+    return this;
+  }
+}
+
 export function addButton(
   scene: Phaser.Scene,
   x: number,
   y: number,
   label: string,
   onClick: () => void,
-  width = 180,
-): Phaser.GameObjects.Container {
-  const height = 28;
-  const bg = scene.add
-    .rectangle(0, 0, width, height, 0xd8c08a)
-    .setStrokeStyle(2, 0x5a3a1a);
-  const text = scene.add
-    .text(0, 0, label, { fontFamily: 'Georgia, serif', fontSize: '15px', color: '#3a2210' })
-    .setOrigin(0.5);
-
-  const button = scene.add.container(x, y, [bg, text]).setSize(width, height);
-  button
-    .setInteractive({ useHandCursor: true })
-    .on('pointerover', () => bg.setFillStyle(0xf0dca8))
-    .on('pointerout', () => bg.setFillStyle(0xd8c08a))
-    .on('pointerup', onClick);
-  return button;
+  options?: ButtonOptions,
+): Button {
+  return new Button(scene, x, y, label, onClick, options);
 }

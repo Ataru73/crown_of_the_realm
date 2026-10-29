@@ -1,11 +1,11 @@
-import { attackableTerritories, defendingArmy, type Action, type ActionOutcome } from './actions';
+import { attackableTerritories, defendingArmy, type Action } from './actions';
 import { addArmies, strength } from './army';
 import { castleBonus } from './combat';
 import { buy, income, PRICES, upkeep, type Unit } from './economy';
 import { territoryDef } from './map';
 import type { Rng } from './rng';
 import { currentLord } from './state';
-import { playTurn, withRng } from './turn';
+import { playTurn, withRng, type TurnResult } from './turn';
 import type { GameState, LordId, TerritoryId } from './types';
 
 /** Attack only when this many times stronger than the defenders (after castle walls). */
@@ -75,7 +75,7 @@ export function chooseAiAction(state: GameState, lordId: LordId, rng: Rng): Acti
 }
 
 /** Plays the current lord's whole turn as the AI. */
-export function playAiTurn(state: GameState): ActionOutcome {
+export function playAiTurn(state: GameState): TurnResult {
   const lord = currentLord(state);
   aiSpend(state, lord.id);
   const action = withRng(state, (rng) => chooseAiAction(state, lord.id, rng));

@@ -4,6 +4,7 @@ import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
 import { CutsceneScene } from './scenes/CutsceneScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { HeroSelectScene } from './scenes/HeroSelectScene';
 import { JoustScene } from './scenes/JoustScene';
 import { MapScene } from './scenes/MapScene';
 import { SiegeScene } from './scenes/SiegeScene';
@@ -24,6 +25,7 @@ new Phaser.Game({
   scene: [
     BootScene,
     TitleScene,
+    HeroSelectScene,
     CutsceneScene,
     MapScene,
     JoustScene,

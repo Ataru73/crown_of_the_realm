@@ -17,8 +17,8 @@ export abstract class MinigameScene extends Phaser.Scene {
     drawPlaceholder(this, this.color, this.title, 'Placeholder - minigame not built yet');
     const win = () => this.finish({ kind: this.kind, outcome: 'win', gold: 100, fame: 10 });
     const lose = () => this.finish({ kind: this.kind, outcome: 'lose', gold: 0, fame: -5 });
-    addButton(this, WIDTH / 2 - 100, HEIGHT / 2, 'Win', win, 160);
-    addButton(this, WIDTH / 2 + 100, HEIGHT / 2, 'Lose', lose, 160);
+    addButton(this, WIDTH / 2 - 100, HEIGHT / 2, 'Win', win, { width: 160 });
+    addButton(this, WIDTH / 2 + 100, HEIGHT / 2, 'Lose', lose, { width: 160 });
   }
 
   protected finish(result: MinigameResult): void {
