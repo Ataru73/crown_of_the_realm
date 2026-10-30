@@ -178,107 +178,796 @@
     ]
   },
   {
-    "id": "swordsman_hero_idle",
+    "id": "swordsman_hero_idle_0",
     "tint": true,
     "size": [
-      92,
+      86,
       150
-    ]
+    ],
+    "points": {
+      "feet": [
+        31,
+        148
+      ],
+      "hand": [
+        44,
+        59
+      ],
+      "tip": [
+        86,
+        10
+      ]
+    }
   },
   {
-    "id": "swordsman_hero_windup",
+    "id": "swordsman_hero_idle_1",
     "tint": true,
     "size": [
-      80,
-      161
-    ]
-  },
-  {
-    "id": "swordsman_hero_strike",
-    "tint": true,
-    "size": [
-      134,
-      138
-    ]
-  },
-  {
-    "id": "swordsman_hero_parry",
-    "tint": true,
-    "size": [
-      64,
-      143
-    ]
-  },
-  {
-    "id": "swordsman_hero_hit",
-    "tint": true,
-    "size": [
-      89,
-      133
-    ]
-  },
-  {
-    "id": "swordsman_hero_down",
-    "tint": true,
-    "size": [
-      135,
-      36
-    ]
-  },
-  {
-    "id": "swordsman_guard_idle",
-    "tint": true,
-    "size": [
-      91,
+      86,
       150
-    ]
+    ],
+    "points": {
+      "feet": [
+        31,
+        148
+      ],
+      "hand": [
+        44,
+        59
+      ],
+      "tip": [
+        85,
+        9
+      ]
+    }
   },
   {
-    "id": "swordsman_guard_windup",
+    "id": "swordsman_hero_step_0",
     "tint": true,
     "size": [
-      80,
-      160
-    ]
+      100,
+      150
+    ],
+    "points": {
+      "feet": [
+        46,
+        148
+      ],
+      "hand": [
+        59,
+        62
+      ],
+      "tip": [
+        95,
+        8
+      ]
+    }
   },
   {
-    "id": "swordsman_guard_strike",
+    "id": "swordsman_hero_step_1",
     "tint": true,
     "size": [
-      132,
-      138
-    ]
+      100,
+      150
+    ],
+    "points": {
+      "feet": [
+        46,
+        148
+      ],
+      "hand": [
+        59,
+        64
+      ],
+      "tip": [
+        88,
+        7
+      ]
+    }
   },
   {
-    "id": "swordsman_guard_parry",
+    "id": "swordsman_hero_step_2",
     "tint": true,
     "size": [
-      64,
-      143
-    ]
+      100,
+      150
+    ],
+    "points": {
+      "feet": [
+        46,
+        148
+      ],
+      "hand": [
+        59,
+        57
+      ],
+      "tip": [
+        94,
+        3
+      ]
+    }
   },
   {
-    "id": "swordsman_guard_hit",
+    "id": "swordsman_hero_step_3",
     "tint": true,
     "size": [
-      90,
-      131
-    ]
+      100,
+      150
+    ],
+    "points": {
+      "feet": [
+        46,
+        148
+      ],
+      "hand": [
+        59,
+        59
+      ],
+      "tip": [
+        100,
+        9
+      ]
+    }
   },
   {
-    "id": "swordsman_guard_down",
+    "id": "swordsman_hero_windup_0",
+    "tint": true,
+    "size": [
+      93,
+      168
+    ],
+    "points": {
+      "feet": [
+        46,
+        166
+      ],
+      "hand": [
+        52,
+        69
+      ],
+      "tip": [
+        86,
+        14
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_windup_1",
+    "tint": true,
+    "size": [
+      93,
+      168
+    ],
+    "points": {
+      "feet": [
+        46,
+        166
+      ],
+      "hand": [
+        52,
+        60
+      ],
+      "tip": [
+        77,
+        0
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_strike_0",
     "tint": true,
     "size": [
       133,
-      35
-    ]
+      141
+    ],
+    "points": {
+      "feet": [
+        55,
+        138
+      ],
+      "hand": [
+        70,
+        39
+      ],
+      "tip": [
+        133,
+        19
+      ]
+    }
   },
   {
-    "id": "sword",
+    "id": "swordsman_hero_strike_1",
+    "tint": true,
     "size": [
-      19,
-      84
-    ]
+      133,
+      141
+    ],
+    "points": {
+      "feet": [
+        55,
+        138
+      ],
+      "hand": [
+        67,
+        33
+      ],
+      "tip": [
+        130,
+        16
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_parry_0",
+    "tint": true,
+    "size": [
+      93,
+      157
+    ],
+    "points": {
+      "feet": [
+        39,
+        154
+      ],
+      "hand": [
+        54,
+        61
+      ],
+      "tip": [
+        83,
+        3
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_parry_1",
+    "tint": true,
+    "size": [
+      93,
+      157
+    ],
+    "points": {
+      "feet": [
+        39,
+        154
+      ],
+      "hand": [
+        56,
+        60
+      ],
+      "tip": [
+        81,
+        0
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_hit_0",
+    "tint": true,
+    "size": [
+      117,
+      149
+    ],
+    "points": {
+      "feet": [
+        47,
+        147
+      ],
+      "hand": [
+        49,
+        60
+      ],
+      "tip": [
+        113,
+        75
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_hit_1",
+    "tint": true,
+    "size": [
+      117,
+      149
+    ],
+    "points": {
+      "feet": [
+        47,
+        147
+      ],
+      "hand": [
+        53,
+        61
+      ],
+      "tip": [
+        117,
+        48
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_fall_0",
+    "tint": true,
+    "size": [
+      162,
+      165
+    ],
+    "points": {
+      "feet": [
+        77,
+        140
+      ],
+      "hand": [
+        81,
+        52
+      ],
+      "tip": [
+        138,
+        85
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_fall_1",
+    "tint": true,
+    "size": [
+      162,
+      165
+    ],
+    "points": {
+      "feet": [
+        77,
+        140
+      ],
+      "hand": [
+        92,
+        70
+      ],
+      "tip": [
+        154,
+        92
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_fall_2",
+    "tint": true,
+    "size": [
+      162,
+      165
+    ],
+    "points": {
+      "feet": [
+        77,
+        140
+      ],
+      "hand": [
+        95,
+        104
+      ],
+      "tip": [
+        159,
+        119
+      ]
+    }
+  },
+  {
+    "id": "swordsman_hero_fall_3",
+    "tint": true,
+    "size": [
+      162,
+      165
+    ],
+    "points": {
+      "feet": [
+        77,
+        140
+      ],
+      "hand": [
+        97,
+        124
+      ],
+      "tip": [
+        162,
+        130
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_idle_0",
+    "tint": true,
+    "size": [
+      86,
+      158
+    ],
+    "points": {
+      "feet": [
+        31,
+        156
+      ],
+      "hand": [
+        44,
+        67
+      ],
+      "tip": [
+        86,
+        18
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_idle_1",
+    "tint": true,
+    "size": [
+      86,
+      158
+    ],
+    "points": {
+      "feet": [
+        31,
+        156
+      ],
+      "hand": [
+        44,
+        67
+      ],
+      "tip": [
+        85,
+        17
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_step_0",
+    "tint": true,
+    "size": [
+      100,
+      159
+    ],
+    "points": {
+      "feet": [
+        46,
+        157
+      ],
+      "hand": [
+        59,
+        71
+      ],
+      "tip": [
+        95,
+        17
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_step_1",
+    "tint": true,
+    "size": [
+      100,
+      159
+    ],
+    "points": {
+      "feet": [
+        46,
+        157
+      ],
+      "hand": [
+        59,
+        73
+      ],
+      "tip": [
+        88,
+        16
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_step_2",
+    "tint": true,
+    "size": [
+      100,
+      159
+    ],
+    "points": {
+      "feet": [
+        46,
+        157
+      ],
+      "hand": [
+        59,
+        66
+      ],
+      "tip": [
+        94,
+        12
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_step_3",
+    "tint": true,
+    "size": [
+      100,
+      159
+    ],
+    "points": {
+      "feet": [
+        46,
+        157
+      ],
+      "hand": [
+        59,
+        68
+      ],
+      "tip": [
+        100,
+        18
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_windup_0",
+    "tint": true,
+    "size": [
+      92,
+      168
+    ],
+    "points": {
+      "feet": [
+        46,
+        166
+      ],
+      "hand": [
+        52,
+        69
+      ],
+      "tip": [
+        86,
+        14
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_windup_1",
+    "tint": true,
+    "size": [
+      92,
+      168
+    ],
+    "points": {
+      "feet": [
+        46,
+        166
+      ],
+      "hand": [
+        52,
+        60
+      ],
+      "tip": [
+        77,
+        0
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_strike_0",
+    "tint": true,
+    "size": [
+      133,
+      150
+    ],
+    "points": {
+      "feet": [
+        55,
+        147
+      ],
+      "hand": [
+        70,
+        48
+      ],
+      "tip": [
+        133,
+        28
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_strike_1",
+    "tint": true,
+    "size": [
+      133,
+      150
+    ],
+    "points": {
+      "feet": [
+        55,
+        147
+      ],
+      "hand": [
+        67,
+        42
+      ],
+      "tip": [
+        130,
+        25
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_parry_0",
+    "tint": true,
+    "size": [
+      104,
+      160
+    ],
+    "points": {
+      "feet": [
+        39,
+        157
+      ],
+      "hand": [
+        54,
+        64
+      ],
+      "tip": [
+        83,
+        6
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_parry_1",
+    "tint": true,
+    "size": [
+      104,
+      160
+    ],
+    "points": {
+      "feet": [
+        39,
+        157
+      ],
+      "hand": [
+        56,
+        63
+      ],
+      "tip": [
+        81,
+        3
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_hit_0",
+    "tint": true,
+    "size": [
+      117,
+      157
+    ],
+    "points": {
+      "feet": [
+        47,
+        155
+      ],
+      "hand": [
+        49,
+        68
+      ],
+      "tip": [
+        113,
+        83
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_hit_1",
+    "tint": true,
+    "size": [
+      117,
+      157
+    ],
+    "points": {
+      "feet": [
+        47,
+        155
+      ],
+      "hand": [
+        53,
+        69
+      ],
+      "tip": [
+        117,
+        56
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_fall_0",
+    "tint": true,
+    "size": [
+      162,
+      173
+    ],
+    "points": {
+      "feet": [
+        77,
+        148
+      ],
+      "hand": [
+        81,
+        60
+      ],
+      "tip": [
+        138,
+        93
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_fall_1",
+    "tint": true,
+    "size": [
+      162,
+      173
+    ],
+    "points": {
+      "feet": [
+        77,
+        148
+      ],
+      "hand": [
+        92,
+        78
+      ],
+      "tip": [
+        154,
+        100
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_fall_2",
+    "tint": true,
+    "size": [
+      162,
+      173
+    ],
+    "points": {
+      "feet": [
+        77,
+        148
+      ],
+      "hand": [
+        95,
+        112
+      ],
+      "tip": [
+        159,
+        127
+      ]
+    }
+  },
+  {
+    "id": "swordsman_guard_fall_3",
+    "tint": true,
+    "size": [
+      162,
+      173
+    ],
+    "points": {
+      "feet": [
+        77,
+        148
+      ],
+      "hand": [
+        97,
+        132
+      ],
+      "tip": [
+        162,
+        138
+      ]
+    }
   },
   {
     "id": "catapult",

@@ -35,6 +35,9 @@ COLOURS = {
     "boot": (50, 40, 34),
     "leather": (72, 46, 32),
     "wood": (118, 58, 44),
+    "gold": (180, 140, 45),
+    "dark_steel": (62, 70, 80),
+    "hair": (80, 50, 30),
     # Pure green so process.py moves it into the lord's-colour layer; dark enough that
     # the light doesn't clip it, since its shading becomes the tint layer's.
     "tint": (0, 165, 0),
@@ -71,9 +74,10 @@ def material(name: str) -> bpy.types.Material:
     mat.use_nodes = True
     bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
     bsdf.inputs["Base Color"].default_value = (*(linear(c) for c in COLOURS[name]), 1)
-    bsdf.inputs["Roughness"].default_value = 0.3 if name == "steel" else 0.9
+    is_metal = name in ("steel", "gold", "dark_steel")
+    bsdf.inputs["Roughness"].default_value = 0.3 if is_metal else 0.9
     bsdf.inputs["Metallic"].default_value = 0.0
-    bsdf.inputs["Specular IOR Level"].default_value = 0.8 if name == "steel" else 0.2
+    bsdf.inputs["Specular IOR Level"].default_value = 0.8 if is_metal else 0.2
     return mat
 
 

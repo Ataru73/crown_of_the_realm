@@ -257,47 +257,106 @@ assets:
       with a large round steel vamplate hand guard near the bottom end. Plain painted
       wood with spiral stripes.
 
-  - id: swordsman_hero
-    kind: sheet
-    frames: [idle, windup, strike, parry, hit, down]
-    height: 150
+  # The swordsmen are rendered in Blender by tools/assets/blender/swordsman.py,
+  # matching the fight phases: idle (2 frames), step (4 frames), windup (2 frames),
+  # strike (2 frames), parry (2 frames), hit (2 frames) and fall (4 frames).
+  - id: swordsman_hero_idle
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
     tint: true
-    aspect: landscape 16:9
-    prompt: >-
-      Six full-body side-view poses of a Saxon swordsman. Chain mail, round helmet, a tunic in a flat bright pure green
-      (#00FF00), a small round shield on his far arm also painted flat bright pure green
-      (#00FF00). He faces right in every pose and holds
-      NO weapon in any of them: his right hand is always an empty fist. From left to
-      right: (1) standing in a fighting stance, fist held forward at chest height;
-      (2) winding up, fist raised high above his head; (3) lunging forward to strike,
-      front knee bent, fist thrust far forward at chest height; (4) parrying, fist held
-      up in front of his face, leaning back; (5) staggering backward from a blow, head
-      thrown back, arms flung wide; (6) fallen, lying flat on his back on the ground.
 
-  - id: swordsman_guard
-    kind: sheet
-    frames: [idle, windup, strike, parry, hit, down]
-    height: 150
+  - id: swordsman_hero_step
+    kind: render
+    frames: 4
+    scale: 2.0
+    alpha_cutoff: 50
     tint: true
-    aspect: landscape 16:9
-    prompt: >-
-      Six full-body side-view poses of a Norman castle guard. Conical helmet with a nose guard, long chain mail hauberk, a
-      surcoat in a flat bright pure green (#00FF00), a kite shield on his far arm also
-      painted flat bright pure green (#00FF00). He faces right in every pose and holds
-      NO weapon in any of them: his right hand is always an empty fist. From left to
-      right: (1) standing in a fighting stance, fist held forward at chest height;
-      (2) winding up, fist raised high above his head; (3) lunging forward to strike,
-      front knee bent, fist thrust far forward at chest height; (4) parrying, fist held
-      up in front of his face, leaning back; (5) staggering backward from a blow, head
-      thrown back, arms flung wide; (6) fallen, lying flat on his back on the ground.
 
-  - id: sword
-    kind: sprite
-    height: 84
-    aspect: portrait 9:16
-    prompt: >-
-      A single medieval arming sword standing perfectly vertical, point at the top,
-      straight steel blade, simple brass crossguard, leather grip and round pommel.
+  - id: swordsman_hero_windup
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_hero_strike
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_hero_parry
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_hero_hit
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_hero_fall
+    kind: render
+    frames: 4
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_idle
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_step
+    kind: render
+    frames: 4
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_windup
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_strike
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_parry
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_hit
+    kind: render
+    frames: 2
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
+
+  - id: swordsman_guard_fall
+    kind: render
+    frames: 4
+    scale: 2.0
+    alpha_cutoff: 50
+    tint: true
 
   - id: catapult
     kind: sprite
