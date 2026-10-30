@@ -177,3 +177,13 @@ describe('raid', () => {
     expect(s.lords.player.army.soldiers).toBe(16);
   });
 });
+
+describe('raid action', () => {
+  it('uses the sword fight outcome when given', () => {
+    const s = game();
+    s.lords.montclair.gold = 40;
+    const r = playTurn(s, { type: 'raid', target: 'montclair', won: true });
+    expect(r.won).toBe(true);
+    expect(r.gold).toBe(20);
+  });
+});

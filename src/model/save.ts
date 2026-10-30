@@ -21,6 +21,7 @@ export function deserialize(json: string): GameState {
   }
   const state = data as Partial<GameState> | null;
   if (!state || typeof state !== 'object') throw new SaveError('Save data is not an object');
+  if (state.version === 1) migrateV1(state);
   if (state.version !== STATE_VERSION) {
     throw new SaveError(`Unsupported save version: ${String(state.version)}`);
   }
@@ -31,6 +32,14 @@ export function deserialize(json: string): GameState {
     if (!state.territories[def.id]) throw new SaveError(`Save is missing territory ${def.id}`);
   }
   return state as GameState;
+}
+
+/** Version 2 added the kidnap event. */
+function migrateV1(state: Partial<GameState>): void {
+  state.kidnap = null;
+  state.ladiesTaken = [];
+  state.wife = null;
+  state.version = 2;
 }
 
 export function saveGame(state: GameState, storage: Pick<Storage, 'setItem'>): void {

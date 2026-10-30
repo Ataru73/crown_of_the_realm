@@ -1,5 +1,6 @@
 import { performAction, type Action, type ActionOutcome } from './actions';
 import { collectIncome, growGarrisons } from './economy';
+import { monthlyEvents } from './events';
 import { Rng } from './rng';
 import { addLog, currentLord, trimLog } from './state';
 import { RuleError, type GameState, type LordId } from './types';
@@ -20,6 +21,7 @@ function startMonth(state: GameState): void {
     state.year += 1;
   }
   growGarrisons(state);
+  withRng(state, (rng) => monthlyEvents(state, rng));
 }
 
 /** Hands the turn to the next living lord, starting a new month when the order wraps, and pays them. */

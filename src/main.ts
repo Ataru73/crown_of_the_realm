@@ -11,7 +11,7 @@ import { SiegeScene } from './scenes/SiegeScene';
 import { SwordScene } from './scenes/SwordScene';
 import { TitleScene } from './scenes/TitleScene';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   width: WIDTH,
@@ -35,3 +35,6 @@ new Phaser.Game({
     GameOverScene,
   ],
 });
+
+// Handy for poking at scenes from the browser console during development.
+if (import.meta.env.DEV) Object.assign(window, { game });

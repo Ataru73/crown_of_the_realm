@@ -28,6 +28,8 @@ function losses(before: Army, after: Army): string {
 export interface MapSceneData {
   conquest?: { target: TerritoryId; result: BattleResult };
   tournament?: { opponent: LordId; stake: Stake; won: boolean };
+  raid?: { target: LordId; won: boolean };
+  rescue?: { won: boolean };
 }
 
 /** The campaign map: the player's turn happens here, then the AI lords move. */
@@ -41,13 +43,13 @@ export class MapScene extends Phaser.Scene {
   private lordText!: Phaser.GameObjects.Text;
   private infoText!: Phaser.GameObjects.Text;
   private logText!: Phaser.GameObjects.Text;
-  private buttons!: Record<'buy' | 'march' | 'attack' | 'raid' | 'joustFame' | 'joustLand' | 'pass', Button>;
+  private buttons!: Record<'buy' | 'march' | 'attack' | 'raid' | 'rescue' | 'joustFame' | 'joustLand' | 'pass', Button>;
 
   constructor() {
     super(SceneKeys.Map);
   }
 
-  /** A battle or joust just fought in its own scene, to apply as this turn's action. */
+  /** A battle, joust or sword fight just fought in its own scene, to apply as this turn's action. */
   create(data: MapSceneData = {}): void {
     if (!session.state) {
       this.scene.start(SceneKeys.Title);
@@ -67,6 +69,8 @@ export class MapScene extends Phaser.Scene {
     else if (!currentLord(this.state).isPlayer) void this.runAiTurns();
     else if (data.conquest) this.act({ type: 'conquer', ...data.conquest });
     else if (data.tournament) this.act({ type: 'tournament', ...data.tournament });
+    else if (data.raid) this.act({ type: 'raid', ...data.raid });
+    else if (data.rescue) this.act({ type: 'rescue', ...data.rescue });
   }
 
   private buildPanel(): void {
@@ -79,16 +83,17 @@ export class MapScene extends Phaser.Scene {
       wordWrap: { width: WIDTH - PANEL_X - 14 },
     }));
 
-    const opts = { width: 156, height: 22, fontSize: 13 };
-    const at = (i: number) => 216 + i * 26;
+    const opts = { width: 156, height: 20, fontSize: 12 };
+    const at = (i: number) => 214 + i * 23;
     this.buttons = {
       buy: new Button(this, PANEL_CENTER, at(0), 'Muster Army', () => this.openBuy(), opts),
       march: new Button(this, PANEL_CENTER, at(1), 'March', () => this.march(), opts),
       attack: new Button(this, PANEL_CENTER, at(2), 'Attack', () => this.attack(), opts),
       raid: new Button(this, PANEL_CENTER, at(3), 'Raid Castle', () => this.raid(), opts),
-      joustFame: new Button(this, PANEL_CENTER, at(4), 'Joust for Fame', () => this.joust('fame'), opts),
-      joustLand: new Button(this, PANEL_CENTER, at(5), 'Joust for Land', () => this.joust('land'), opts),
-      pass: new Button(this, PANEL_CENTER, at(6), 'Rest (End Turn)', () => this.act({ type: 'pass' }), opts),
+      rescue: new Button(this, PANEL_CENTER, at(4), 'Rescue Lady', () => this.rescue(), opts),
+      joustFame: new Button(this, PANEL_CENTER, at(5), 'Joust for Fame', () => this.joust('fame'), opts),
+      joustLand: new Button(this, PANEL_CENTER, at(6), 'Joust for Land', () => this.joust('land'), opts),
+      pass: new Button(this, PANEL_CENTER, at(7), 'Rest (End Turn)', () => this.act({ type: 'pass' }), opts),
     };
   }
 
@@ -140,6 +145,7 @@ export class MapScene extends Phaser.Scene {
       .setLabel(this.selected && attackable.has(this.selected) ? `Attack ${name}` : 'Attack')
       .setEnabled(turn && !!this.selected && attackable.has(this.selected));
     this.buttons.raid.setEnabled(turn && !!rival);
+    this.buttons.rescue.setEnabled(turn && !!s.kidnap);
     this.buttons.joustFame.setEnabled(turn && !!rival);
     this.buttons.joustLand.setEnabled(turn && !!rival);
     this.buttons.pass.setEnabled(turn);
@@ -150,7 +156,11 @@ export class MapScene extends Phaser.Scene {
   private selectionInfo(): string {
     if (this.state.status !== 'playing') return 'The war is over.';
     if (this.busy) return `${currentLord(this.state).name} is moving...`;
-    if (!this.selected) return 'Click a territory.\nRed rings: lands your army can attack.';
+    if (!this.selected) {
+      const k = this.state.kidnap;
+      if (k) return `Click a territory.\n${k.lady} is held by ${this.state.lords[k.captor].name}!`;
+      return 'Click a territory.\nRed rings: lands your army can attack.';
+    }
     const t = this.state.territories[this.selected];
     const def = territoryDef(t.id);
     const owner = t.owner ? this.state.lords[t.owner] : null;
@@ -181,7 +191,11 @@ export class MapScene extends Phaser.Scene {
 
   private raid(): void {
     const rival = this.selectedRival();
-    if (rival) this.act({ type: 'raid', target: rival.id });
+    if (rival && this.isPlayerTurn()) this.scene.start(SceneKeys.Sword, { mission: 'raid', target: rival.id });
+  }
+
+  private rescue(): void {
+    if (this.state.kidnap && this.isPlayerTurn()) this.scene.start(SceneKeys.Sword, { mission: 'rescue' });
   }
 
   private joust(stake: 'fame' | 'land'): void {
@@ -207,7 +221,7 @@ export class MapScene extends Phaser.Scene {
     this.refresh();
 
     const lines = [...result.messages];
-    if (action.type === 'conquer' || (action.type === 'raid' && !result.won)) {
+    if (action.type === 'conquer' || ((action.type === 'raid' || action.type === 'rescue') && !result.won)) {
       lines.push(losses(armyBefore, this.player.army));
     }
     const title =
@@ -222,6 +236,7 @@ export class MapScene extends Phaser.Scene {
   private async runAiTurns(): Promise<void> {
     this.busy = true;
     this.selected = null;
+    const kidnapBefore = this.state.kidnap;
     while (this.state.status === 'playing' && !currentLord(this.state).isPlayer) {
       this.refresh();
       await this.wait(AI_TURN_DELAY_MS);
@@ -235,6 +250,15 @@ export class MapScene extends Phaser.Scene {
     }
     session.save();
     this.refresh();
+    const k = this.state.kidnap;
+    if (k && k !== kidnapBefore) {
+      showDialog(
+        this,
+        'A Lady Is Taken!',
+        `${this.state.lords[k.captor].name} has carried off ${k.lady} to his castle.\nRescue her before he forces her to wed him.`,
+        [{ label: 'To Arms' }],
+      );
+    }
   }
 
   private endGame(): void {

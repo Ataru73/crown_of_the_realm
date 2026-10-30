@@ -1,6 +1,7 @@
 import { addArmies, emptyArmy, strength } from './army';
 import { resolveBattle, type BattleInput, type BattleResult } from './combat';
 import { garrisonCap } from './economy';
+import { applyRescue, requireKidnap, rescueChance } from './events';
 import { neighbours, territoryDef } from './map';
 import type { Rng } from './rng';
 import { addLog, updateStatus } from './state';
@@ -14,7 +15,9 @@ export type Action =
   | { type: 'march'; target: TerritoryId }
   /** `result`: a battle already fought in the battle scene; auto-resolved when absent. */
   | { type: 'conquer'; target: TerritoryId; result?: BattleResult }
-  | { type: 'raid'; target: LordId }
+  /** `won`: the outcome of the sword fight; auto-resolved when absent. */
+  | { type: 'raid'; target: LordId; won?: boolean }
+  | { type: 'rescue'; won?: boolean }
   /** `won`: the outcome of the joust minigame; auto-resolved when absent. */
   | { type: 'tournament'; opponent: LordId; stake: Stake; won?: boolean };
 
@@ -252,7 +255,7 @@ export function applyRaid(state: GameState, lordId: LordId, targetId: LordId, wo
   return 0;
 }
 
-/** Performs an action, auto-resolving tournaments and raids with the RNG. */
+/** Performs an action, auto-resolving battles, tournaments, raids and rescues not fought by the player. */
 export function performAction(state: GameState, lordId: LordId, action: Action, rng: Rng): ActionOutcome {
   switch (action.type) {
     case 'pass':
@@ -266,8 +269,14 @@ export function performAction(state: GameState, lordId: LordId, action: Action, 
     }
     case 'raid': {
       requireRival(state, lordId, action.target);
-      const won = rng.next() < raidChance(state, lordId);
+      const won = action.won ?? rng.next() < raidChance(state, lordId);
       return { action, won, gold: applyRaid(state, lordId, action.target, won) };
+    }
+    case 'rescue': {
+      requireKidnap(state, lordId);
+      const won = action.won ?? rng.next() < rescueChance(state, lordId);
+      applyRescue(state, lordId, won);
+      return { action, won };
     }
     case 'tournament': {
       requireRival(state, lordId, action.opponent);

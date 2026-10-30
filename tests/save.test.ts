@@ -30,6 +30,14 @@ describe('save/load', () => {
     expect(loadGame(storage)).toEqual(s);
   });
 
+  it('upgrades version 1 saves', () => {
+    const old: Partial<ReturnType<typeof game>> = { ...game(), version: 1 };
+    delete old.kidnap;
+    delete old.ladiesTaken;
+    delete old.wife;
+    expect(deserialize(JSON.stringify(old))).toEqual(game());
+  });
+
   it('rejects bad save data', () => {
     expect(() => deserialize('not json')).toThrow(SaveError);
     expect(() => deserialize('null')).toThrow(SaveError);

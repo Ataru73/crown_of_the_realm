@@ -41,6 +41,14 @@ export interface Territory {
 
 export type GameStatus = 'playing' | 'won' | 'lost';
 
+/** A Saxon lady held in a Norman castle, waiting to be rescued. */
+export interface Kidnap {
+  lady: string;
+  captor: LordId;
+  /** Month index (year * 12 + month) she was carried off. */
+  since: number;
+}
+
 export interface GameState {
   version: number;
   /** 0 = January. */
@@ -54,6 +62,11 @@ export interface GameState {
   rngState: number;
   status: GameStatus;
   log: string[];
+  kidnap: Kidnap | null;
+  /** Ladies already carried off; each is taken at most once. */
+  ladiesTaken: string[];
+  /** The lady the hero married after rescuing her. */
+  wife: string | null;
 }
 
 export type MinigameKind = 'joust' | 'sword' | 'siege' | 'battle';

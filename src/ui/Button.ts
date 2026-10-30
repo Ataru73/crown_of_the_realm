@@ -5,6 +5,8 @@ export interface ButtonOptions {
   width?: number;
   height?: number;
   fontSize?: number;
+  /** Fire on press instead of release, for timing-critical controls. */
+  onPress?: boolean;
 }
 
 /** Placeholder button: parchment-colored box with a label. */
@@ -19,7 +21,7 @@ export class Button extends Phaser.GameObjects.Container {
     y: number,
     label: string,
     onClick: () => void,
-    { width = 180, height = 28, fontSize = 15 }: ButtonOptions = {},
+    { width = 180, height = 28, fontSize = 15, onPress = false }: ButtonOptions = {},
   ) {
     super(scene, x, y);
     this.bg = scene.add.rectangle(0, 0, width, height, COLORS.parchment).setStrokeStyle(2, COLORS.border);
@@ -29,7 +31,7 @@ export class Button extends Phaser.GameObjects.Container {
     this.setInteractive({ useHandCursor: true })
       .on('pointerover', () => this.bg.setFillStyle(COLORS.parchmentLight))
       .on('pointerout', () => this.bg.setFillStyle(COLORS.parchment))
-      .on('pointerup', onClick);
+      .on(onPress ? 'pointerdown' : 'pointerup', onClick);
     scene.add.existing(this);
   }
 

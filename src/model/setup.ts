@@ -79,6 +79,9 @@ export function newGame(heroId: string, seed: number): GameState {
     rngState: seed >>> 0,
     status: 'playing',
     log: [],
+    kidnap: null,
+    ladiesTaken: [],
+    wife: null,
   };
   addLog(state, 'The king is dead. Saxon and Norman lords fight for the crown.');
   collectIncome(state, lords[0].id);
