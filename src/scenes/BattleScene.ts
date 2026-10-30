@@ -19,7 +19,7 @@ import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { Army, GameState, TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
-import { addBackdrop, addTinted, setTintedFrame } from '../ui/assets';
+import { addBackdrop, addTinted, assetPoint, setTintedFrame } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 import { playMusic, sfx } from '../ui/audio';
 
@@ -47,20 +47,34 @@ function describeLosses(a: Army): string {
 /** Keys 1 to 5 pick the tactics. */
 const DIGITS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
 
-type UnitFrame = 'rest' | 'stride' | 'attack';
-/** Each unit's frames (`<unit>_<name>`) and the point between its feet in each. */
-const UNIT_FRAMES: Record<'soldier' | 'knight', Record<UnitFrame, { name: string; x: number; y: number }>> = {
-  soldier: {
-    rest: { name: 'march', x: 4, y: 22 },
-    stride: { name: 'stride', x: 6, y: 22 },
-    attack: { name: 'attack', x: 8, y: 17 },
-  },
-  knight: {
-    rest: { name: 'ride', x: 11, y: 37 },
-    stride: { name: 'stride', x: 14, y: 37 },
-    attack: { name: 'attack', x: 12, y: 23 },
-  },
+type KnightFrame = 'rest' | 'stride' | 'attack';
+/** The knight's frames (`knight_<name>`) and the point between its feet in each. */
+const KNIGHT_FRAMES: Record<KnightFrame, { name: string; x: number; y: number }> = {
+  rest: { name: 'ride', x: 11, y: 37 },
+  stride: { name: 'stride', x: 14, y: 37 },
+  attack: { name: 'attack', x: 12, y: 23 },
 };
+/** The soldier's animations, rendered in Blender: `soldier_<anim>_<n>`, each with its feet point. */
+const SOLDIER_FRAMES = { stand: 1, walk: 8, thrust: 3 };
+type SoldierAnim = keyof typeof SOLDIER_FRAMES;
+/** How far a soldier moves in one walk cycle, so his feet don't slide. */
+const WALK_CYCLE_PX = 11;
+
+/** A texture and the point in it that stands on the figure's position. */
+interface Pose {
+  key: string;
+  origin: { x: number; y: number };
+}
+
+function knightPose(frame: KnightFrame): Pose {
+  const def = KNIGHT_FRAMES[frame];
+  return { key: `knight_${def.name}`, origin: def };
+}
+
+function soldierPose(anim: SoldierAnim, n: number): Pose {
+  const key = `soldier_${anim}_${n}`;
+  return { key, origin: assetPoint(key, 'feet') };
+}
 /** How long the armies take to close and strike in each round. */
 const CLASH_MS = 700;
 /** The share of the clash spent marching; the rest is the blow. */
@@ -73,7 +87,8 @@ interface Figure {
   sprite: Phaser.GameObjects.Container;
   x: number;
   dir: 1 | -1;
-  frame: UnitFrame;
+  /** The texture shown, so a pose that hasn't changed isn't set again. */
+  frame: string;
 }
 
 /** The attacker picks a tactic each round until one side breaks. */
@@ -186,18 +201,17 @@ export class BattleScene extends Phaser.Scene {
     // Nearer (lower) figures overlap the ones behind them.
     figures.sort((a, b) => a.y - b.y);
     for (const f of figures) {
-      const rest = UNIT_FRAMES[f.unit].rest;
-      const sprite = addTinted(this, f.x, f.y, `${f.unit}_${rest.name}`, color, rest).setScale(dir, 1);
+      const rest = f.unit === 'knight' ? knightPose('rest') : soldierPose('stand', 0);
+      const sprite = addTinted(this, f.x, f.y, rest.key, color, rest.origin).setScale(dir, 1);
       this.troops.add(sprite);
-      this.figures.push({ unit: f.unit, sprite, x: f.x, dir, frame: 'rest' });
+      this.figures.push({ unit: f.unit, sprite, x: f.x, dir, frame: rest.key });
     }
   }
 
-  private pose(f: Figure, frame: UnitFrame): void {
-    if (f.frame === frame) return;
-    const def = UNIT_FRAMES[f.unit][frame];
-    setTintedFrame(f.sprite, `${f.unit}_${def.name}`, def);
-    f.frame = frame;
+  private pose(f: Figure, pose: Pose): void {
+    if (f.frame === pose.key) return;
+    setTintedFrame(f.sprite, pose.key, pose.origin);
+    f.frame = pose.key;
   }
 
   /** Both armies march at each other and strike, then `done` shows the losses. */
@@ -211,12 +225,22 @@ export class BattleScene extends Phaser.Scene {
       onUpdate: (tween) => {
         const t = tween.getValue() ?? 0;
         const march = Math.min(1, t / MARCH_SHARE);
+        const strike = Math.max(0, (t - MARCH_SHARE) / (1 - MARCH_SHARE));
         this.figures.forEach((f, i) => {
           const charging = tactic === 'charge' && f.unit === 'knight' && f.dir === 1;
           const reach = charging ? ADVANCE.charge : ADVANCE[f.unit];
-          f.sprite.setX(f.x + f.dir * reach * Phaser.Math.Easing.Sine.Out(march));
-          // Neighbours step out of time with each other.
-          this.pose(f, t >= MARCH_SHARE ? 'attack' : Math.floor(march * 6 + i) % 2 ? 'stride' : 'rest');
+          const moved = reach * Phaser.Math.Easing.Sine.Out(march);
+          f.sprite.setX(f.x + f.dir * moved);
+          if (f.unit === 'knight') {
+            // Neighbours step out of time with each other.
+            this.pose(f, knightPose(t >= MARCH_SHARE ? 'attack' : Math.floor(march * 6 + i) % 2 ? 'stride' : 'rest'));
+          } else if (t >= MARCH_SHARE) {
+            this.pose(f, soldierPose('thrust', Math.min(SOLDIER_FRAMES.thrust - 1, Math.floor(strike * SOLDIER_FRAMES.thrust))));
+          } else {
+            // The walk keeps pace with the ground covered; neighbours start on different steps.
+            const step = Math.floor((moved / WALK_CYCLE_PX) * SOLDIER_FRAMES.walk) + i * 3;
+            this.pose(f, soldierPose('walk', step % SOLDIER_FRAMES.walk));
+          }
         });
       },
       onComplete: () => {

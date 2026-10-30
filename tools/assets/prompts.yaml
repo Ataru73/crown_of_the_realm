@@ -324,19 +324,28 @@ assets:
     prompt: >-
       Side view of a small medieval peasant hut with a thatched roof and wattle walls.
 
-  - id: soldier
-    kind: sheet
-    frames: [march, stride, attack]
-    height: 22
+  # The foot soldier is rendered in Blender by tools/assets/blender/soldier.py, not
+  # painted by Gemini: one entry per animation, each frame with its anchor points.
+  - id: soldier_stand
+    kind: render
+    frames: 1
+    scale: 10
     alpha_cutoff: 50
     tint: true
-    aspect: landscape 16:9
-    prompt: >-
-      Three full-body side-view poses of a medieval foot soldier facing right, wearing a
-      helmet and a tunic in a flat bright pure green (#00FF00). From left to right:
-      (1) marching with a spear held upright, legs together; (2) mid-stride, legs wide
-      apart, spear upright; (3) thrusting the spear forward level at waist height,
-      lunging. Simple bold shapes that read at a tiny size.
+
+  - id: soldier_walk
+    kind: render
+    frames: 8
+    scale: 10
+    alpha_cutoff: 50
+    tint: true
+
+  - id: soldier_thrust
+    kind: render
+    frames: 3
+    scale: 10
+    alpha_cutoff: 50
+    tint: true
 
   - id: knight
     kind: sheet

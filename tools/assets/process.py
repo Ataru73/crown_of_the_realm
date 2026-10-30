@@ -144,6 +144,8 @@ def split_frames(rgba: np.ndarray, n: int) -> list[np.ndarray]:
 
 def process(asset: dict, default_colors: int) -> list[dict]:
     aid, kind = asset["id"], asset["kind"]
+    if kind == "render":
+        return process_render(asset, asset.get("colors", default_colors))
     src = next(RAW.glob(f"{aid}.*"))
     im = Image.open(src)
     colors = asset.get("colors", default_colors)
@@ -204,7 +206,47 @@ def process_sheet(asset: dict, im: Image.Image, colors: int) -> list[dict]:
     return entries
 
 
+def process_render(asset: dict, colors: int) -> list[dict]:
+    """Turns the frames a Blender script rendered (raw-assets/<id>/<n>.png, all from one
+    camera) into one sprite per frame. Every frame is shrunk by the same `scale` and
+    cropped to the same box, so the figure doesn't jump between frames, and the points
+    in anchors.json move with them into the manifest."""
+    src = RAW / asset["id"]
+    anchors = json.loads((src / "anchors.json").read_text())
+    scale, cutoff = asset["scale"], asset.get("alpha_cutoff", 128)
+    frames = []
+    for i in range(len(anchors["frames"])):
+        rgba = np.asarray(Image.open(src / f"{i}.png").convert("RGBA"))
+        tint = None
+        if asset.get("tint"):
+            rgba, tint = split_tint(rgba)
+        h, w = rgba.shape[0] // scale, rgba.shape[1] // scale
+        frames.append([fit_sprite(layer, h) if layer is not None else None for layer in (rgba, tint)])
+        assert frames[-1][0].width == w
+    # One box around every frame's solid pixels.
+    solid = np.zeros((h, w), bool)
+    for im, _ in frames:
+        solid |= np.asarray(im.getchannel("A")) >= cutoff
+    ys, xs = np.nonzero(solid)
+    box = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
+    entries = []
+    for i, ((im, tint_im), points) in enumerate(zip(frames, anchors["frames"])):
+        fid = f"{asset['id']}_{i}"
+        entry = {"id": fid}
+        if tint_im is not None:
+            finish_sprite(tint_im.crop(box), None, cutoff).save(OUT / f"{fid}_tint.png", optimize=True)
+            entry["tint"] = True
+        out = finish_sprite(im.crop(box), colors, cutoff)
+        out.save(OUT / f"{fid}.png", optimize=True)
+        entry["size"] = list(out.size)
+        entry["points"] = {k: [round(x / scale - box[0]), round(y / scale - box[1])] for k, (x, y) in points.items()}
+        entries.append(entry)
+    return entries
+
+
 def output_ids(asset: dict) -> list[str]:
+    if asset["kind"] == "render":
+        return [f"{asset['id']}_{i}" for i in range(asset["frames"])]
     if asset["kind"] == "sheet":
         return [f"{asset['id']}_{f}" for f in asset["frames"]]
     return [asset["id"]]
@@ -218,7 +260,7 @@ def main() -> None:
     for asset in spec["assets"]:
         if only and asset["id"] not in only:
             continue
-        if not any(RAW.glob(f"{asset['id']}.*")):
+        if not any(RAW.glob(f"{asset['id']}.*")) and not (RAW / asset["id"]).is_dir():
             print(f"skip {asset['id']}: no raw image")
             continue
         for entry in process(asset, spec["colors"]):

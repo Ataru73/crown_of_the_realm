@@ -93,14 +93,24 @@ loops with a crossfaded seam, stings trimmed) into `public/assets/music/`.
    the magenta, splits tint layers and reduces the palette into `public/assets/`.
    Animated units are `kind: sheet`: one Gemini image with all the poses in a row,
    cut apart by connected regions into `<id>_<frame>.png`, all at one scale, so the
-   poses match each other. Pass the sheet's id (e.g. `soldier`), not a frame's.
+   poses match each other. Pass the sheet's id (e.g. `knight`), not a frame's.
    The venv has Pillow, PyYAML and numpy (create it with
    `python3 -m venv --without-pip tools/assets/.venv` and
    `pip3 --python tools/assets/.venv/bin/python install pillow pyyaml numpy`).
 4. Anchor points in the art are constants in the scenes, one per frame: the joust
    knight's shield (`KNIGHT_FRAMES`), the swordsmen's feet and sword hand (`FRAMES`
-   in SwordScene), the battle units' feet (`UNIT_FRAMES`), the lance butt. Re-measure
+   in SwordScene), the battle knight's feet (`KNIGHT_FRAMES`), the lance butt. Re-measure
    them after regenerating a sheet (a contact sheet with a 10 px grid helps).
+5. **Blender renders** (`kind: render`): the battle foot soldier is a rigged model built
+   by `tools/assets/blender/soldier.py`, which poses each animation in `ANIMS` (stand,
+   walk, thrust) and renders it from a fixed orthographic camera into
+   `raw-assets/soldier_<anim>/`, with `anchors.json` (feet, hand) per frame. Run it in
+   Blender through the Blender MCP (Blender runs on Windows and writes to the repo via
+   `\\wsl.localhost\Ubuntu-24.04\...`), then `process.py soldier_stand soldier_walk
+   soldier_thrust`. Every frame of an animation is shrunk by the same `scale` and cropped
+   to one box, and the anchors go into the manifest as `points` (`assetPoint` in
+   `ui/assets.ts`), so nothing is measured by hand. The tunic is lit green
+   (0, 165, 0), dark enough that its shading survives into the tint layer.
 
 ## Conventions
 
@@ -154,7 +164,9 @@ There are 124 tests, all passing.
   `<video>` (mp4) whose src can be fetched and relayed as audio/mp4.
 - Animation is key poses, not cycles: swordsmen have 6 frames (idle, windup,
   strike, parry, hit, down), the joust knight 3 (charge, stride, struck), battle
-  soldiers and knights 3 (rest, stride, attack). The catapult arm and the siege wall
+  knights 3 (rest, stride, attack). Battle soldiers are Blender renders with real
+  cycles: stand, an 8-frame walk paced to the ground covered (`WALK_CYCLE_PX`), and a
+  3-frame thrust. The catapult arm and the siege wall
   are drawn in code. The sword fight's poses were checked in the browser by setting
   them from JS, not in a full fight played by hand.
 - Quitting to the title from a minigame and pressing Continue replays the month

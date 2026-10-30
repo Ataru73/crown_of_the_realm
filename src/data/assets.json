@@ -302,28 +302,316 @@
     ]
   },
   {
-    "id": "soldier_march",
+    "id": "soldier_stand_0",
     "tint": true,
     "size": [
-      8,
-      22
-    ]
+      6,
+      20
+    ],
+    "points": {
+      "feet": [
+        2,
+        20
+      ],
+      "foot_near": [
+        2,
+        19
+      ],
+      "foot_far": [
+        2,
+        19
+      ],
+      "hand": [
+        5,
+        11
+      ]
+    }
   },
   {
-    "id": "soldier_stride",
+    "id": "soldier_walk_0",
     "tint": true,
     "size": [
-      12,
-      22
-    ]
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        2,
+        18
+      ],
+      "foot_far": [
+        5,
+        19
+      ],
+      "hand": [
+        8,
+        11
+      ]
+    }
   },
   {
-    "id": "soldier_attack",
+    "id": "soldier_walk_1",
     "tint": true,
     "size": [
-      19,
-      17
-    ]
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        5,
+        19
+      ],
+      "foot_far": [
+        2,
+        19
+      ],
+      "hand": [
+        8,
+        12
+      ]
+    }
+  },
+  {
+    "id": "soldier_walk_2",
+    "tint": true,
+    "size": [
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        8,
+        19
+      ],
+      "foot_far": [
+        2,
+        18
+      ],
+      "hand": [
+        8,
+        12
+      ]
+    }
+  },
+  {
+    "id": "soldier_walk_3",
+    "tint": true,
+    "size": [
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        7,
+        19
+      ],
+      "foot_far": [
+        1,
+        17
+      ],
+      "hand": [
+        8,
+        11
+      ]
+    }
+  },
+  {
+    "id": "soldier_walk_4",
+    "tint": true,
+    "size": [
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        5,
+        19
+      ],
+      "foot_far": [
+        2,
+        17
+      ],
+      "hand": [
+        8,
+        11
+      ]
+    }
+  },
+  {
+    "id": "soldier_walk_5",
+    "tint": true,
+    "size": [
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        2,
+        19
+      ],
+      "foot_far": [
+        5,
+        19
+      ],
+      "hand": [
+        8,
+        12
+      ]
+    }
+  },
+  {
+    "id": "soldier_walk_6",
+    "tint": true,
+    "size": [
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        2,
+        19
+      ],
+      "foot_far": [
+        8,
+        19
+      ],
+      "hand": [
+        8,
+        12
+      ]
+    }
+  },
+  {
+    "id": "soldier_walk_7",
+    "tint": true,
+    "size": [
+      10,
+      21
+    ],
+    "points": {
+      "feet": [
+        5,
+        20
+      ],
+      "foot_near": [
+        1,
+        18
+      ],
+      "foot_far": [
+        7,
+        19
+      ],
+      "hand": [
+        8,
+        12
+      ]
+    }
+  },
+  {
+    "id": "soldier_thrust_0",
+    "tint": true,
+    "size": [
+      25,
+      16
+    ],
+    "points": {
+      "feet": [
+        8,
+        16
+      ],
+      "foot_near": [
+        9,
+        15
+      ],
+      "foot_far": [
+        6,
+        15
+      ],
+      "hand": [
+        10,
+        8
+      ]
+    }
+  },
+  {
+    "id": "soldier_thrust_1",
+    "tint": true,
+    "size": [
+      25,
+      16
+    ],
+    "points": {
+      "feet": [
+        8,
+        16
+      ],
+      "foot_near": [
+        9,
+        15
+      ],
+      "foot_far": [
+        5,
+        14
+      ],
+      "hand": [
+        8,
+        8
+      ]
+    }
+  },
+  {
+    "id": "soldier_thrust_2",
+    "tint": true,
+    "size": [
+      25,
+      16
+    ],
+    "points": {
+      "feet": [
+        8,
+        16
+      ],
+      "foot_near": [
+        11,
+        15
+      ],
+      "foot_far": [
+        4,
+        14
+      ],
+      "hand": [
+        14,
+        7
+      ]
+    }
   },
   {
     "id": "knight_ride",

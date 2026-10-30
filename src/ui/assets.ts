@@ -9,9 +9,19 @@ interface AssetEntry {
   size: number[];
   /** Has an `<id>_tint` layer: the areas painted in the lord's colour. */
   tint?: boolean;
+  /** Named points in the image's pixels, for frames rendered in Blender (e.g. `feet`). */
+  points?: Record<string, number[]>;
 }
 
 const ASSETS: AssetEntry[] = manifest;
+const BY_ID = new Map(ASSETS.map((a) => [a.id, a]));
+
+/** A named point of a rendered frame, in its own pixels, as an origin for `addTinted`. */
+export function assetPoint(id: string, name: string): { x: number; y: number } {
+  const p = BY_ID.get(id)?.points?.[name];
+  if (!p) throw new Error(`no point ${name} in asset ${id}`);
+  return { x: p[0], y: p[1] };
+}
 
 /** Queues every image in the manifest on the scene's loader. */
 export function loadAssets(scene: Phaser.Scene): void {
