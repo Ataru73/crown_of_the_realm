@@ -112,8 +112,9 @@ simple result object (`{ outcome: 'win', goldStolen: 120 }`) back to `MapScene`.
    colors, dramatic lighting, medieval England, no text, no watermark"*. Generate
    2–3 test images, pick the look, then lock it.
 2. **Generate in Chrome:** open gemini.google.com with the browser tools, submit each
-   prompt from a prompt list (`tools/assets/prompts.yaml`), download the image into
-   `raw-assets/<id>.png`. For sprites ask for **a single subject on a flat magenta
+   prompt from a prompt list (`tools/assets/prompts.yaml`), and save the image into
+   `raw-assets/<id>.png`. (In practice the download button stalls in Edge, so the
+   image is relayed from the page to `tools/assets/receive.mjs`; see `CLAUDE.md`.) For sprites ask for **a single subject on a flat magenta
    (#FF00FF) background**, side view, consistent framing.
 3. **Process (`tools/assets/process.py`):**
    - crop/resize to target size (backgrounds 640×400);

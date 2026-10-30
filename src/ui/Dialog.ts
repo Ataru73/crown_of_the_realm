@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import { Button } from './Button';
-import { COLORS, textStyle } from './theme';
+import { addParchment } from './assets';
+import { textStyle } from './theme';
 
 export interface DialogButton {
   label: string;
@@ -33,11 +34,11 @@ export function showDialog(
   const height = Math.max(140, bodyText.height + 110);
   const top = -height / 2;
 
-  const panel = scene.add.rectangle(0, 0, width, height, COLORS.parchment).setStrokeStyle(3, COLORS.border);
+  const { fill, frame } = addParchment(scene, 0, 0, width, height, 3);
   const titleText = scene.add.text(0, top + 22, title, textStyle(20)).setOrigin(0.5);
   bodyText.setY(top + 48);
 
-  const container = scene.add.container(WIDTH / 2, HEIGHT / 2, [panel, titleText, bodyText]).setDepth(DEPTH + 1);
+  const container = scene.add.container(WIDTH / 2, HEIGHT / 2, [fill, frame, titleText, bodyText]).setDepth(DEPTH + 1);
   const close = () => {
     container.destroy();
     blocker.destroy();

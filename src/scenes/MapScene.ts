@@ -12,12 +12,14 @@ import { RuleError, type Army, type GameState, type LordId, type TerritoryId } f
 import { Button } from '../ui/Button';
 import { openBuyDialog } from '../ui/BuyDialog';
 import { showDialog } from '../ui/Dialog';
+import { addBackdrop } from '../ui/assets';
 import { MapView } from '../ui/MapView';
 import { COLORS, textStyle } from '../ui/theme';
 
 const PANEL_X = 462;
 const PANEL_CENTER = PANEL_X + (WIDTH - PANEL_X) / 2;
 const AI_TURN_DELAY_MS = 350;
+const LOG_WIDTH = 200;
 
 function losses(before: Army, after: Army): string {
   const s = before.soldiers - after.soldiers;
@@ -43,6 +45,7 @@ export class MapScene extends Phaser.Scene {
   private lordText!: Phaser.GameObjects.Text;
   private infoText!: Phaser.GameObjects.Text;
   private logText!: Phaser.GameObjects.Text;
+  private logBack!: Phaser.GameObjects.Rectangle;
   private buttons!: Record<'buy' | 'march' | 'attack' | 'raid' | 'rescue' | 'joustFame' | 'joustLand' | 'pass', Button>;
 
   constructor() {
@@ -59,10 +62,12 @@ export class MapScene extends Phaser.Scene {
     this.selected = null;
     this.busy = false;
 
-    this.add.rectangle(0, 0, WIDTH, HEIGHT, COLORS.sea).setOrigin(0);
+    addBackdrop(this, 'map');
     this.map = new MapView(this, (id) => this.select(id));
     this.buildPanel();
-    this.logText = this.add.text(8, 352, '', textStyle(10, '#f4e4bc', { lineSpacing: 1 }));
+    // The chronicle sits over the open sea in the map's top-left corner.
+    this.logBack = this.add.rectangle(4, 4, LOG_WIDTH + 8, 0, 0x000000, 0.55).setOrigin(0);
+    this.logText = this.add.text(8, 7, '', textStyle(10, '#f4e4bc', { lineSpacing: 1, wordWrap: { width: LOG_WIDTH } }));
 
     this.refresh();
     if (this.state.status !== 'playing') this.endGame();
@@ -74,7 +79,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   private buildPanel(): void {
-    this.add.rectangle(PANEL_X, 0, WIDTH - PANEL_X, HEIGHT, COLORS.parchment).setOrigin(0);
+    this.add.tileSprite(PANEL_X, 0, WIDTH - PANEL_X, HEIGHT, 'parchment').setOrigin(0);
     this.add.rectangle(PANEL_X, 0, 3, HEIGHT, COLORS.border).setOrigin(0);
     this.dateText = this.add.text(PANEL_CENTER, 8, '', textStyle(15)).setOrigin(0.5, 0);
     this.lordText = this.add.text(PANEL_X + 10, 30, '', textStyle(11, '#3a2210', { lineSpacing: 2 }));
@@ -151,6 +156,7 @@ export class MapScene extends Phaser.Scene {
     this.buttons.pass.setEnabled(turn);
 
     this.logText.setText(s.log.slice(-3).join('\n'));
+    this.logBack.setSize(LOG_WIDTH + 8, this.logText.text ? this.logText.height + 6 : 0);
   }
 
   private selectionInfo(): string {

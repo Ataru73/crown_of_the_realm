@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { HEIGHT, SceneKeys, WIDTH } from '../config';
+import { SceneKeys, WIDTH } from '../config';
 import { session } from '../game/session';
 import { playerLord } from '../model/state';
 import {
@@ -19,14 +19,24 @@ import {
 import { withRng } from '../model/turn';
 import type { GameState, Lord, LordId } from '../model/types';
 import { Button } from '../ui/Button';
+import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 
 export type SwordMission = { mission: 'raid'; target: LordId } | { mission: 'rescue' };
 
-const FLOOR_Y = 300;
+const FLOOR_Y = 328;
 const HERO_X = 250;
 const GUARD_X = 390;
 const ENTER_FROM_X = WIDTH + 60;
+/** The torches in the corridor painting. */
+const TORCHES = [[163, 140], [477, 140]];
+/** Where each swordsman sprite stands and holds his sword, in its own pixels. */
+const FIGHTER_POSE = {
+  swordsman_hero: { feet: { x: 35, y: 150 }, hand: { x: 42, y: 43 } },
+  swordsman_guard: { feet: { x: 37, y: 150 }, hand: { x: 38, y: 50 } },
+};
+/** The grip in the sword sprite, as a fraction of its height. */
+const SWORD_GRIP = 0.86;
 
 /** Sword angles in degrees: 0 points straight up, positive leans toward the foe. */
 const POSE = { idle: 35, raised: -75, struck: 115, parry: 5 };
@@ -83,11 +93,11 @@ export class SwordScene extends Phaser.Scene {
     this.slash = 0;
 
     this.drawCorridor();
-    this.hero = this.drawFighter(lordColor(this.player.id), 1);
-    this.guard = this.drawFighter(lordColor(this.foe.id), -1);
+    this.hero = this.drawFighter('swordsman_hero', lordColor(this.player.id), 1);
+    this.guard = this.drawFighter('swordsman_guard', lordColor(this.foe.id), -1);
     this.hero.body.setPosition(HERO_X, FLOOR_Y);
     this.warning = this.add
-      .text(GUARD_X, FLOOR_Y - 150, '!', textStyle(30, '#ffdd44', { stroke: '#000', strokeThickness: 5 }))
+      .text(GUARD_X, FLOOR_Y - 172, '!', textStyle(30, '#ffdd44', { stroke: '#000', strokeThickness: 5 }))
       .setOrigin(0.5)
       .setVisible(false);
     this.drawUi();
@@ -95,29 +105,15 @@ export class SwordScene extends Phaser.Scene {
   }
 
   private drawCorridor(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x34323c).fillRect(0, 0, WIDTH, FLOOR_Y);
-    // Stone courses with staggered joints.
-    g.lineStyle(1, 0x24222a);
-    for (let y = 0, row = 0; y < FLOOR_Y; y += 22, row++) {
-      g.lineBetween(0, y, WIDTH, y);
-      for (let x = (row % 2) * 24; x < WIDTH; x += 48) g.lineBetween(x, y, x, y + 22);
-    }
-    // Arched doorways down the corridor.
-    for (const x of [70, 570]) {
-      g.fillStyle(0x15141a).fillRect(x - 34, 150, 68, FLOOR_Y - 150).fillCircle(x, 150, 34);
-    }
-    g.fillStyle(0x4a3828).fillRect(0, FLOOR_Y, WIDTH, HEIGHT - FLOOR_Y);
-    g.lineStyle(1, 0x3a2a1e);
-    for (let x = 0; x < WIDTH; x += 40) g.lineBetween(x, FLOOR_Y, x - 30, HEIGHT);
-    // Torches.
-    for (const x of [175, 465]) {
-      g.fillStyle(0x5a3a1a).fillRect(x - 3, 120, 6, 26);
-      const flame = this.add.ellipse(x, 112, 14, 22, 0xffa830);
+    addBackdrop(this, 'corridor');
+    // The painted torches flicker.
+    for (const [x, y] of TORCHES) {
+      const glow = this.add.ellipse(x, y, 40, 52, 0xffa830, 0.22).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({
-        targets: flame,
-        scaleY: 0.75,
+        targets: glow,
+        scaleY: 0.8,
         scaleX: 1.15,
+        alpha: 0.12,
         duration: 140 + (x % 70),
         yoyo: true,
         repeat: -1,
@@ -126,25 +122,15 @@ export class SwordScene extends Phaser.Scene {
   }
 
   /**
-   * A swordsman facing right (`facing` 1) or left (-1); the body's origin is
-   * between his feet, the sword's origin is his sword hand.
+   * A swordsman facing right (`facing` 1) or left (-1), his tunic in `color`;
+   * the body's origin is between his feet, the sword's origin is his sword hand.
    */
-  private drawFighter(color: number, facing: 1 | -1): Fighter {
-    const g = this.add.graphics();
-    g.fillStyle(0x2a2a30).fillRect(-14, -50, 10, 50).fillRect(4, -50, 10, 50);
-    g.fillStyle(color).fillRect(-18, -110, 36, 64);
-    g.fillStyle(0x9a9aa2).fillRect(-18, -60, 36, 8);
-    g.fillStyle(0xe0b890).fillCircle(0, -124, 13);
-    g.fillStyle(0x9a9aa2).fillRect(-14, -140, 28, 14);
-    // Shield on the far arm.
-    g.fillStyle(color).fillRect(-30, -102, 14, 40);
-    g.lineStyle(2, 0xffffff).strokeRect(-30, -102, 14, 40);
-
-    const blade = this.add.graphics();
-    blade.fillStyle(0xd0d0d8).fillRect(-2, -70, 4, 66);
-    blade.fillStyle(0x8a6a30).fillRect(-9, -6, 18, 4).fillRect(-2, -2, 4, 10);
-    const sword = this.add.container(20, -84, [blade]);
-    const body = this.add.container(ENTER_FROM_X, FLOOR_Y, [g, sword]).setScale(facing, 1);
+  private drawFighter(key: 'swordsman_hero' | 'swordsman_guard', color: number, facing: 1 | -1): Fighter {
+    const pose = FIGHTER_POSE[key];
+    const figure = addTinted(this, 0, 0, key, color, pose.feet);
+    const blade = this.add.image(0, 0, 'sword').setOrigin(0.5, SWORD_GRIP);
+    const sword = this.add.container(pose.hand.x - pose.feet.x, pose.hand.y - pose.feet.y, [blade]);
+    const body = this.add.container(ENTER_FROM_X, FLOOR_Y, [figure, sword]).setScale(facing, 1);
     return { body, sword };
   }
 
@@ -165,13 +151,13 @@ export class SwordScene extends Phaser.Scene {
       }))
       .setOrigin(0.5, 0);
     this.add
-      .text(WIDTH / 2, 386, 'Keys: A or Space to strike · D or Shift to parry', textStyle(11, '#cccccc'))
+      .text(WIDTH / 2, 391, 'Keys: A or Space to strike · D or Shift to parry', textStyle(11, '#cccccc'))
       .setOrigin(0.5);
 
     const opts = { width: 150, height: 30, fontSize: 15, onPress: true };
     this.controls = [
-      new Button(this, WIDTH / 2 - 90, 350, 'Strike', () => this.act('strike'), opts),
-      new Button(this, WIDTH / 2 + 90, 350, 'Parry', () => this.act('parry'), opts),
+      new Button(this, WIDTH / 2 - 90, 364, 'Strike', () => this.act('strike'), opts),
+      new Button(this, WIDTH / 2 + 90, 364, 'Parry', () => this.act('parry'), opts),
     ];
     const kb = this.input.keyboard;
     kb?.on('keydown-A', () => this.act('strike'));
@@ -303,7 +289,7 @@ export class SwordScene extends Phaser.Scene {
     if (won) this.say(rescue ? `The way is clear: ${lady} is free!` : 'The way to the treasury is clear!');
     else this.say(rescue ? 'You are beaten back from the keep.' : 'You are beaten back and flee the castle.');
     this.time.delayedCall(600, () => {
-      new Button(this, WIDTH / 2, 350, 'Return to Map', () =>
+      new Button(this, WIDTH / 2, 364, 'Return to Map', () =>
         this.scene.start(SceneKeys.Map, this.mission.mission === 'raid'
           ? { raid: { target: this.mission.target, won } }
           : { rescue: { won } }),

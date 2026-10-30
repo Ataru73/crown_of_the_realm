@@ -16,14 +16,20 @@ import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { GameState, Lord, LordId } from '../model/types';
 import { Button } from '../ui/Button';
+import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 
-const HORIZON = 150;
-const VANISH = { x: 325, y: HORIZON };
+const HORIZON = 180;
+const VANISH = { x: 322, y: HORIZON };
 /** Where the opponent's shield is at the moment of impact. */
-const IMPACT = { x: 240, y: 205 };
+const IMPACT = { x: 240, y: 225 };
 const START_SCALE = 0.06;
 const IMPACT_SCALE = 1.3;
+/** Centre of the shield in the joust_knight sprite. */
+const KNIGHT_SHIELD = { x: 86, y: 62 };
+/** The lance sprite's butt end and point, in its own pixels. */
+const LANCE_BUTT = { x: 37, y: 356 };
+const LANCE_POINT_Y = 2;
 /** Shield radius in local (scale 1) coordinates. */
 const SHIELD_RADIUS = 30;
 const CHARGE_MS = 2600;
@@ -58,7 +64,7 @@ export class JoustScene extends Phaser.Scene {
   private lastPass: { mine: Strike; his: Strike } | null = null;
 
   private knight!: Phaser.GameObjects.Container;
-  private lance!: Phaser.GameObjects.Graphics;
+  private lance!: Phaser.GameObjects.Image;
   private statusText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
   private keys?: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -83,7 +89,8 @@ export class JoustScene extends Phaser.Scene {
 
     this.drawLists();
     this.knight = this.drawKnight(lordColor(this.opponent.id));
-    this.lance = this.add.graphics();
+    this.lance = this.add.image(LANCE_BASE.x, LANCE_BASE.y, 'lance');
+    this.lance.setOrigin(LANCE_BUTT.x / this.lance.width, LANCE_BUTT.y / this.lance.height);
     this.drawUi();
     this.resetPass();
 
@@ -96,57 +103,16 @@ export class JoustScene extends Phaser.Scene {
   }
 
   private drawLists(): void {
-    this.add.rectangle(0, 0, WIDTH, HORIZON, 0x8fb8de).setOrigin(0);
-    // Stands full of spectators along the horizon.
-    const stands = this.add.graphics();
-    stands.fillStyle(0x6a4a30).fillRect(0, HORIZON - 30, WIDTH, 30);
-    const crowd = [0xc04040, 0x4060c0, 0xe0c060, 0x40a060, 0xe0e0e0, 0x804090];
-    for (let x = 4; x < WIDTH; x += 7) {
-      stands.fillStyle(crowd[(x * 7) % crowd.length]).fillRect(x, HORIZON - 26 + ((x * 3) % 8), 4, 6);
-    }
-    for (let x = 30; x < WIDTH; x += 90) {
-      stands.lineStyle(1, 0x333333).lineBetween(x, HORIZON - 30, x, HORIZON - 52);
-      stands.fillStyle(crowd[(x / 30) % crowd.length]).fillTriangle(x, HORIZON - 52, x + 14, HORIZON - 47, x, HORIZON - 42);
-    }
-    this.add.rectangle(0, HORIZON, WIDTH, HEIGHT - HORIZON, 0x6a8a3a).setOrigin(0);
-    // The tilt barrier runs from the vanishing point toward the player.
-    this.add.polygon(0, 0, [VANISH.x, VANISH.y, VANISH.x + 3, VANISH.y, 300, HEIGHT, 250, HEIGHT], 0xd8c08a)
+    addBackdrop(this, 'joust');
+    // The tilt barrier runs from the vanishing point down beside the rider's horse.
+    this.add.polygon(0, 0, [VANISH.x - 1, VANISH.y, VANISH.x + 2, VANISH.y, 274, HEIGHT, 246, HEIGHT], 0xc8a060)
       .setOrigin(0)
-      .setStrokeStyle(1, 0x6a4a2a);
+      .setStrokeStyle(1, 0x5a3a1a);
   }
 
-  /** The opponent seen head-on; the container's origin is the centre of his shield. */
+  /** The opponent seen head-on, in his colours; the container's origin is the centre of his shield. */
   private drawKnight(color: number): Phaser.GameObjects.Container {
-    const g = this.add.graphics();
-    const rider = -34;
-    // Horse and caparison.
-    g.fillStyle(0x5a3a22).fillEllipse(rider, 100, 90, 80);
-    g.fillStyle(0x4a2e1a).fillRect(rider - 13, 40, 26, 75);
-    g.fillStyle(color).fillTriangle(rider - 62, 160, rider + 62, 160, rider, 55);
-    g.fillStyle(0x2a1a10).fillRect(rider - 30, 150, 10, 40).fillRect(rider + 20, 150, 10, 40);
-    // Rider.
-    g.fillStyle(0x9a9aa2).fillRect(rider - 22, -50, 44, 72);
-    g.fillStyle(0xb0b0b8).fillRect(rider - 15, -95, 30, 34);
-    g.fillStyle(0x222222).fillRect(rider - 11, -82, 22, 4);
-    g.fillStyle(color).fillTriangle(rider - 6, -95, rider + 6, -95, rider, -122);
-    // His lance, foreshortened, pointing at the viewer.
-    g.lineStyle(7, 0xb08850).lineBetween(rider - 26, -10, rider - 6, 26);
-    g.fillStyle(0x777777).fillCircle(rider - 6, 26, 6);
-    // Shield (a heater shield) with a chevron.
-    g.fillStyle(color).fillPoints(
-      [
-        { x: -28, y: -30 }, { x: 28, y: -30 }, { x: 28, y: 6 }, { x: 0, y: 38 }, { x: -28, y: 6 },
-      ].map((p) => new Phaser.Geom.Point(p.x, p.y)),
-      true,
-    );
-    g.lineStyle(3, 0xffffff).strokePoints(
-      [
-        { x: -28, y: -30 }, { x: 28, y: -30 }, { x: 28, y: 6 }, { x: 0, y: 38 }, { x: -28, y: 6 },
-      ].map((p) => new Phaser.Geom.Point(p.x, p.y)),
-      true,
-    );
-    g.lineStyle(6, 0xffffff).lineBetween(-24, 8, 0, -10).lineBetween(0, -10, 24, 8);
-    return this.add.container(VANISH.x, VANISH.y, [g]);
+    return addTinted(this, VANISH.x, VANISH.y, 'joust_knight', color, KNIGHT_SHIELD);
   }
 
   private drawUi(): void {
@@ -226,29 +192,11 @@ export class JoustScene extends Phaser.Scene {
     this.aim.y = Phaser.Math.Clamp(this.aim.y, HORIZON - 40, HEIGHT);
   }
 
-  /** A tapering wooden lance from the bottom right to the tip. */
+  /** The lance from the bottom right to the tip, foreshortened to reach it. */
   private drawLance(x: number, y: number): void {
     const angle = Math.atan2(y - LANCE_BASE.y, x - LANCE_BASE.x) + Math.PI / 2;
-    const side = (w: number) => ({ x: Math.cos(angle) * w, y: Math.sin(angle) * w });
-    const base = side(14);
-    const point = side(2);
-    this.lance.clear();
-    this.lance
-      .fillStyle(0xb08850)
-      .fillPoints(
-        [
-          new Phaser.Geom.Point(LANCE_BASE.x - base.x, LANCE_BASE.y - base.y),
-          new Phaser.Geom.Point(x - point.x, y - point.y),
-          new Phaser.Geom.Point(x + point.x, y + point.y),
-          new Phaser.Geom.Point(LANCE_BASE.x + base.x, LANCE_BASE.y + base.y),
-        ],
-        true,
-      );
-    this.lance.fillStyle(0x777777).fillCircle(x, y, 3);
-    // Vamplate (hand guard) near the grip.
-    const gx = LANCE_BASE.x + (x - LANCE_BASE.x) * 0.12;
-    const gy = LANCE_BASE.y + (y - LANCE_BASE.y) * 0.12;
-    this.lance.fillStyle(0x8a8a92).fillCircle(gx, gy, 22);
+    const length = Math.hypot(x - LANCE_BASE.x, y - LANCE_BASE.y);
+    this.lance.setRotation(angle).setScale(0.8, length / (LANCE_BUTT.y - LANCE_POINT_Y));
   }
 
   private impact(tipX: number, tipY: number): void {

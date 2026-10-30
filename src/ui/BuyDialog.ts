@@ -4,7 +4,8 @@ import { buildCastle, buy, income, PRICES, upkeep, type Unit } from '../model/ec
 import { territoryDef } from '../model/map';
 import type { GameState, LordId, TerritoryId } from '../model/types';
 import { Button } from './Button';
-import { COLORS, textStyle } from './theme';
+import { addParchment } from './assets';
+import { textStyle } from './theme';
 
 const DEPTH = 100;
 
@@ -33,10 +34,10 @@ export function openBuyDialog(
 ): void {
   const lord = state.lords[lordId];
   const blocker = scene.add.rectangle(0, 0, WIDTH, HEIGHT, 0x000000, 0.55).setOrigin(0).setInteractive().setDepth(DEPTH);
-  const panel = scene.add.rectangle(0, 0, 440, 300, COLORS.parchment).setStrokeStyle(3, COLORS.border);
+  const { fill, frame } = addParchment(scene, 0, 0, 440, 300, 3);
   const title = scene.add.text(0, -128, 'Muster the Army', textStyle(20)).setOrigin(0.5);
   const goldText = scene.add.text(0, -102, '', textStyle(13)).setOrigin(0.5);
-  const container = scene.add.container(WIDTH / 2, HEIGHT / 2, [panel, title, goldText]).setDepth(DEPTH + 1);
+  const container = scene.add.container(WIDTH / 2, HEIGHT / 2, [fill, frame, title, goldText]).setDepth(DEPTH + 1);
 
   const updaters: (() => void)[] = [];
   const refreshAll = () => updaters.forEach((u) => u());

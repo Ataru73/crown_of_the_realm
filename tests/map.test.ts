@@ -9,7 +9,7 @@ describe('map', () => {
     expect(new Set(ids).size).toBe(18);
     for (const t of TERRITORIES) {
       expect(t.x).toBeGreaterThanOrEqual(0);
-      expect(t.x).toBeLessThanOrEqual(640);
+      expect(t.x).toBeLessThanOrEqual(462); // left of the map scene's side panel
       expect(t.y).toBeGreaterThanOrEqual(0);
       expect(t.y).toBeLessThanOrEqual(400);
       expect(t.income).toBeGreaterThan(0);

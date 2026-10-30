@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { HEIGHT, SceneKeys, WIDTH } from '../config';
 import { session } from '../game/session';
 import { addButton } from '../ui/Button';
-import { drawPlaceholder } from '../ui/placeholder';
+import { drawPainting } from '../ui/assets';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -10,14 +10,14 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
-    drawPlaceholder(this, 0x2a1a3a, 'Crown of the Realm', 'England, 1149. The king is dead.');
+    drawPainting(this, 'title', 'Crown of the Realm', 'England, 1149. The king is dead.');
     const hasSave = session.hasSave();
     if (hasSave) {
-      addButton(this, WIDTH / 2, HEIGHT / 2 - 20, 'Continue', () => {
+      addButton(this, WIDTH / 2, HEIGHT - 76, 'Continue', () => {
         if (session.resume()) this.scene.start(SceneKeys.Map);
       });
     }
-    addButton(this, WIDTH / 2, HEIGHT / 2 + (hasSave ? 20 : 0), 'New Campaign', () =>
+    addButton(this, WIDTH / 2, HEIGHT - (hasSave ? 38 : 56), 'New Campaign', () =>
       this.scene.start(SceneKeys.HeroSelect),
     );
   }

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { HEIGHT, SceneKeys, WIDTH } from '../config';
+import { SceneKeys, WIDTH } from '../config';
 import { session } from '../game/session';
 import { battleInput } from '../model/actions';
 import { strength } from '../model/army';
@@ -19,6 +19,7 @@ import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { Army, GameState, TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
+import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 
 const GROUND_Y = 170;
@@ -47,7 +48,7 @@ export class BattleScene extends Phaser.Scene {
   private state!: GameState;
   private target!: TerritoryId;
   private battle!: Battle;
-  private troops!: Phaser.GameObjects.Graphics;
+  private troops!: Phaser.GameObjects.Container;
   private roundText!: Phaser.GameObjects.Text;
   private countText!: { attacker: Phaser.GameObjects.Text; defender: Phaser.GameObjects.Text };
   private reportText!: Phaser.GameObjects.Text;
@@ -82,15 +83,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private drawField(): void {
-    this.add.rectangle(0, 0, WIDTH, GROUND_Y, 0x7fa6c8).setOrigin(0);
-    this.add.rectangle(0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y, 0x5a7a3a).setOrigin(0);
+    addBackdrop(this, 'battle');
     if (this.battle.castle) {
-      // Placeholder walls behind the defenders.
-      const wall = this.add.graphics().fillStyle(0x8a8478).fillRect(470, 70, 150, 110);
-      for (let x = 470; x < 620; x += 20) wall.fillRect(x, 58, 12, 12);
-      wall.fillStyle(0x3a3530).fillRect(530, 130, 30, 50);
+      // The castle stands behind the defenders.
+      this.add.tileSprite(470, GROUND_Y + 22, WIDTH - 470, 44, 'stone').setOrigin(0, 1);
+      this.add.image(560, GROUND_Y + 24, 'keep').setOrigin(0.5, 1).setScale(0.75);
     }
-    this.troops = this.add.graphics();
+    this.troops = this.add.container(0, 0);
   }
 
   private drawUi(): void {
@@ -125,36 +124,33 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  /** Draws one icon per man (up to a cap), knights larger and in front. */
+  /** Places one figure per man (up to a cap), knights in front, catapults behind. */
   private drawArmy(army: Army, x0: number, dir: 1 | -1, color: number): void {
-    const g = this.troops;
+    const figures: { key: string; x: number; y: number }[] = [];
     const soldiers = Math.min(army.soldiers, 80);
     const knights = Math.min(army.knights, 20);
     for (let i = 0; i < knights; i++) {
-      const x = x0 + dir * (Math.floor(i / 5) * 16);
-      const y = 190 + (i % 5) * 18;
-      g.fillStyle(0x4a3020).fillRect(x - 7, y + 6, 14, 6);
-      g.fillStyle(color).fillRect(x - 3, y - 4, 7, 11);
-      g.fillStyle(0xdddddd).fillRect(x - 2, y - 8, 5, 4);
+      figures.push({ key: 'knight', x: x0 + dir * (Math.floor(i / 5) * 18), y: 202 + (i % 5) * 18 });
     }
-    const start = x0 + dir * (Math.ceil(knights / 5) * 16 + 14);
+    const start = x0 + dir * (Math.ceil(knights / 5) * 18 + 14);
     for (let i = 0; i < soldiers; i++) {
-      const x = start + dir * (Math.floor(i / 8) * 9);
-      const y = 186 + (i % 8) * 12;
-      g.fillStyle(color).fillRect(x - 2, y - 3, 5, 8);
-      g.fillStyle(0xe8c8a0).fillRect(x - 1, y - 6, 3, 3);
+      figures.push({ key: 'soldier', x: start + dir * (Math.floor(i / 8) * 9), y: 194 + (i % 8) * 12 });
     }
     for (let i = 0; i < Math.min(army.catapults, 6); i++) {
       const x = x0 - dir * (24 + i * 4);
-      const y = 280 - i * 14;
-      g.fillStyle(0x6a4a2a).fillRect(x - 8, y - 4, 16, 6);
-      g.lineStyle(2, 0x6a4a2a).lineBetween(x, y - 4, x + dir * 8, y - 14);
+      const y = 282 - i * 14;
+      this.troops.add(this.add.image(x, y, 'catapult').setOrigin(0.5, 1).setScale(0.3 * dir, 0.3));
+    }
+    // Nearer (lower) figures overlap the ones behind them.
+    figures.sort((a, b) => a.y - b.y);
+    for (const f of figures) {
+      this.troops.add(addTinted(this, f.x, f.y, f.key, color, { x: f.key === 'knight' ? 12 : 5, y: f.key === 'knight' ? 30 : 22 }).setScale(dir, 1));
     }
   }
 
   private redraw(): void {
     const b = this.battle;
-    this.troops.clear();
+    this.troops.removeAll(true);
     this.drawArmy(b.attacker, 60, 1, this.attackerColor);
     this.drawArmy(b.defender, WIDTH - 60, -1, this.defenderColor);
 

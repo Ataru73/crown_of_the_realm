@@ -1,0 +1,205 @@
+[
+  {
+    "id": "title",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "map",
+    "size": [
+      462,
+      400
+    ]
+  },
+  {
+    "id": "joust",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "corridor",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "siege",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "battle",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "intro",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "victory",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "defeat",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "hero_edwin",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "hero_aldric",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "hero_godwin",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "hero_wulfric",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "joust_knight",
+    "tint": true,
+    "size": [
+      119,
+      240
+    ]
+  },
+  {
+    "id": "lance",
+    "size": [
+      74,
+      360
+    ]
+  },
+  {
+    "id": "swordsman_hero",
+    "tint": true,
+    "size": [
+      85,
+      150
+    ]
+  },
+  {
+    "id": "swordsman_guard",
+    "tint": true,
+    "size": [
+      79,
+      150
+    ]
+  },
+  {
+    "id": "sword",
+    "size": [
+      19,
+      84
+    ]
+  },
+  {
+    "id": "catapult",
+    "size": [
+      95,
+      56
+    ]
+  },
+  {
+    "id": "keep",
+    "size": [
+      137,
+      200
+    ]
+  },
+  {
+    "id": "hut",
+    "size": [
+      56,
+      40
+    ]
+  },
+  {
+    "id": "soldier",
+    "tint": true,
+    "size": [
+      10,
+      22
+    ]
+  },
+  {
+    "id": "knight",
+    "tint": true,
+    "size": [
+      25,
+      30
+    ]
+  },
+  {
+    "id": "shield",
+    "tint": true,
+    "size": [
+      25,
+      30
+    ]
+  },
+  {
+    "id": "castle_icon",
+    "size": [
+      25,
+      18
+    ]
+  },
+  {
+    "id": "banner",
+    "tint": true,
+    "size": [
+      30,
+      22
+    ]
+  },
+  {
+    "id": "parchment",
+    "size": [
+      256,
+      256
+    ]
+  },
+  {
+    "id": "stone",
+    "size": [
+      64,
+      64
+    ]
+  }
+]

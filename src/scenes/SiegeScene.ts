@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { HEIGHT, SceneKeys, WIDTH } from '../config';
+import { SceneKeys, WIDTH } from '../config';
 import { session } from '../game/session';
 import { territoryDef } from '../model/map';
 import {
@@ -29,6 +29,7 @@ import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { GameState, TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
+import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 
 const GROUND_Y = 318;
@@ -51,6 +52,7 @@ export class SiegeScene extends Phaser.Scene {
 
   private arm!: Phaser.GameObjects.Graphics;
   private wall!: Phaser.GameObjects.Graphics;
+  private courses: Phaser.GameObjects.TileSprite[] = [];
   private shot!: Phaser.GameObjects.Arc;
   private trail!: Phaser.GameObjects.Graphics;
   private lastTrail: { x: number; y: number }[] = [];
@@ -91,37 +93,31 @@ export class SiegeScene extends Phaser.Scene {
   }
 
   private drawScenery(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x86a8c8).fillRect(0, 0, WIDTH, GROUND_Y);
-    g.fillStyle(0x6d8a5a).fillEllipse(160, GROUND_Y + 10, 520, 120).fillEllipse(520, GROUND_Y + 14, 460, 90);
-    g.fillStyle(0x5a7a3a).fillRect(0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y);
+    addBackdrop(this, 'siege');
 
     // The keep and huts in the bailey, behind the wall.
     const front = sx(this.siege.distance);
     const back = sx(this.siege.distance + WALL_THICKNESS);
     const keepX = sx(this.siege.distance + WALL_THICKNESS + KEEP_OFFSET);
     const keepW = (YARD_DEPTH - KEEP_OFFSET) * SCALE;
-    g.fillStyle(0x7a746a).fillRect(keepX, sy(KEEP_HEIGHT), keepW, KEEP_HEIGHT * SCALE);
-    for (let x = keepX; x < keepX + keepW; x += 14) g.fillRect(x, sy(KEEP_HEIGHT + 2), 8, 8);
-    g.fillStyle(0x2a2420).fillRect(keepX + 14, sy(26), 8, 14).fillRect(keepX + 40, sy(26), 8, 14);
-    const banner = lordColor(this.state.territories[this.target].owner);
     const poleX = keepX + keepW / 2;
-    g.lineStyle(2, 0x3a2a1a).lineBetween(poleX, sy(KEEP_HEIGHT + 2), poleX, sy(KEEP_HEIGHT + 12));
-    g.fillStyle(banner).fillRect(poleX + 1, sy(KEEP_HEIGHT + 12), 16, 10);
-    g.fillStyle(0x8a6a3a);
+    this.add.rectangle(poleX, sy(KEEP_HEIGHT + 12), 2, 12 * SCALE, 0x3a2a1a).setOrigin(0.5, 0);
+    addTinted(this, poleX + 1, sy(KEEP_HEIGHT + 12), 'banner', lordColor(this.state.territories[this.target].owner), { x: 2, y: 2 });
+    this.add.image(keepX, GROUND_Y, 'keep').setOrigin(0, 1).setDisplaySize(keepW, KEEP_HEIGHT * SCALE);
     for (const m of [4, 10]) {
-      const hx = sx(this.siege.distance + WALL_THICKNESS + m);
-      g.fillRect(hx - 9, sy(4), 18, 4 * SCALE).fillTriangle(hx - 12, sy(4), hx + 12, sy(4), hx, sy(8));
+      this.add.image(sx(this.siege.distance + WALL_THICKNESS + m), GROUND_Y + 2, 'hut').setOrigin(0.5, 1).setScale(0.55);
     }
     // Rubble apron at the wall's foot.
-    g.fillStyle(0x6a645a).fillRect(front - 4, GROUND_Y - 3, back - front + 8, 3);
+    this.add.rectangle(front - 4, GROUND_Y - 3, back - front + 8, 3, 0x6a645a).setOrigin(0);
+
+    // One stone course per wall row, tinted darker as it cracks.
+    this.courses = ROW_HP.map((_, r) =>
+      this.add.tileSprite(front, sy((r + 1) * ROW_HEIGHT), back - front, ROW_HEIGHT * SCALE, 'stone').setOrigin(0),
+    );
   }
 
   private drawCatapult(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x5a3a1e).fillRect(CATAPULT_X - 26, GROUND_Y - 10, 44, 8);
-    g.fillStyle(0x3a2a1a).fillCircle(CATAPULT_X - 18, GROUND_Y - 3, 5).fillCircle(CATAPULT_X + 10, GROUND_Y - 3, 5);
-    g.fillStyle(0x6a4a2a).fillTriangle(CATAPULT_X - 14, GROUND_Y - 10, CATAPULT_X + 6, GROUND_Y - 10, CATAPULT_X - 4, sy(4));
+    this.add.image(CATAPULT_X - 4, GROUND_Y + 2, 'catapult').setOrigin(0.5, 1).setScale(0.6);
     this.arm = this.add.graphics({ x: CATAPULT_X - 4, y: sy(4) });
   }
 
@@ -224,7 +220,7 @@ export class SiegeScene extends Phaser.Scene {
     const a = Phaser.Math.DegToRad(s.angle);
     const theta = s.phase === 'charge' ? a + s.power * (Phaser.Math.DegToRad(165) - a) : a;
     const len = 30;
-    this.arm.clear().lineStyle(4, 0x7a5a3a).lineBetween(0, 0, Math.cos(theta) * len, -Math.sin(theta) * len);
+    this.arm.clear().lineStyle(4, 0x6a4a2a).lineBetween(0, 0, Math.cos(theta) * len, -Math.sin(theta) * len);
     if (s.phase === 'aim' || s.phase === 'charge') {
       this.arm.fillStyle(s.ammo === 'fire' ? 0xff8a20 : 0x6a6460);
       this.arm.fillCircle(Math.cos(theta) * len, -Math.sin(theta) * len, 4);
@@ -278,19 +274,15 @@ export class SiegeScene extends Phaser.Scene {
     const left = sx(s.distance);
     const width = WALL_THICKNESS * SCALE;
     const standing = standingRows(s);
-    for (let r = 0; r < standing; r++) {
+    this.courses.forEach((course, r) => {
       const health = s.rows[r] / ROW_HP[r];
-      const shade = Phaser.Display.Color.Interpolate.ColorWithColor(
-        Phaser.Display.Color.ValueToColor(0x4a443c),
-        Phaser.Display.Color.ValueToColor(0x9a9488),
-        1,
-        health,
-      );
+      const shade = Math.round(110 + 145 * health);
+      course.setVisible(r < standing).setTint(Phaser.Display.Color.GetColor(shade, shade, shade));
       const top = sy((r + 1) * ROW_HEIGHT);
-      g.fillStyle(Phaser.Display.Color.GetColor(shade.r, shade.g, shade.b)).fillRect(left, top, width, ROW_HEIGHT * SCALE);
-      g.lineStyle(1, 0x3a352e).strokeRect(left, top, width, ROW_HEIGHT * SCALE);
-      if (health < 1) g.lineStyle(1, 0x1a1814).lineBetween(left + 3, top + 4, left + width - 5, top + ROW_HEIGHT * SCALE - 3);
-    }
+      if (r < standing && health < 1) {
+        g.lineStyle(1, 0x1a1814).lineBetween(left + 3, top + 4, left + width - 5, top + ROW_HEIGHT * SCALE - 3);
+      }
+    });
     if (standing > 0) {
       const top = sy(standing * ROW_HEIGHT);
       g.fillStyle(0x8a8478);

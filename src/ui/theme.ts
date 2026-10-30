@@ -3,10 +3,6 @@ import type Phaser from 'phaser';
 export const FONT = 'Georgia, serif';
 
 export const COLORS = {
-  sea: 0x1f3a52,
-  parchment: 0xd8c08a,
-  parchmentLight: 0xf0dca8,
-  ink: 0x3a2210,
   border: 0x5a3a1a,
   neutral: 0x9a9480,
   selected: 0xffd34a,

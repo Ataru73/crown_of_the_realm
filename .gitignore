@@ -3,3 +3,5 @@ dist/
 raw-assets/
 *.log
 .DS_Store
+tools/assets/.venv/
+__pycache__/

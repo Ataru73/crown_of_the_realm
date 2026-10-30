@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { COLORS, textStyle } from './theme';
+import { addParchment } from './assets';
+import { textStyle } from './theme';
 
 export interface ButtonOptions {
   width?: number;
@@ -9,9 +10,12 @@ export interface ButtonOptions {
   onPress?: boolean;
 }
 
-/** Placeholder button: parchment-colored box with a label. */
+/** Warm highlight multiplied over the parchment while hovered. */
+const HOVER = 0xfff0c0;
+
+/** Parchment box with a label; brightens under the pointer. */
 export class Button extends Phaser.GameObjects.Container {
-  private readonly bg: Phaser.GameObjects.Rectangle;
+  private readonly bg: Phaser.GameObjects.TileSprite;
   private readonly label: Phaser.GameObjects.Text;
   private enabled = true;
 
@@ -24,13 +28,14 @@ export class Button extends Phaser.GameObjects.Container {
     { width = 180, height = 28, fontSize = 15, onPress = false }: ButtonOptions = {},
   ) {
     super(scene, x, y);
-    this.bg = scene.add.rectangle(0, 0, width, height, COLORS.parchment).setStrokeStyle(2, COLORS.border);
+    const { fill, frame } = addParchment(scene, 0, 0, width, height);
+    this.bg = fill;
     this.label = scene.add.text(0, 0, label, textStyle(fontSize)).setOrigin(0.5);
-    this.add([this.bg, this.label]);
+    this.add([fill, frame, this.label]);
     this.setSize(width, height);
     this.setInteractive({ useHandCursor: true })
-      .on('pointerover', () => this.bg.setFillStyle(COLORS.parchmentLight))
-      .on('pointerout', () => this.bg.setFillStyle(COLORS.parchment))
+      .on('pointerover', () => this.bg.setTint(HOVER))
+      .on('pointerout', () => this.bg.clearTint())
       .on(onPress ? 'pointerdown' : 'pointerup', onClick);
     scene.add.existing(this);
   }
@@ -44,7 +49,7 @@ export class Button extends Phaser.GameObjects.Container {
     if (enabled === this.enabled) return this;
     this.enabled = enabled;
     this.setAlpha(enabled ? 1 : 0.4);
-    this.bg.setFillStyle(COLORS.parchment);
+    this.bg.clearTint();
     if (enabled) this.setInteractive();
     else this.disableInteractive();
     return this;

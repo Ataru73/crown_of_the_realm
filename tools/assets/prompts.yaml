@@ -1,0 +1,286 @@
+# Image prompts for the M7 asset pass. Each prompt is sent to Gemini as
+#   "Generate an image, <aspect>. <style> <sprite_style if a sprite> <prompt> <suffix>"
+# and the download is saved as raw-assets/<id>.png, then processed by process.py.
+#
+# kinds:
+#   bg       cover-crop to `size`, palette-reduce
+#   sprite   key out the magenta background, trim, scale to `height`, palette-reduce;
+#            `tint: true` also splits the bright green areas into <id>_tint.png
+#            (greyscale, tinted with the lord's colour in game) and greys them in the base
+#   tile     cover-crop to `size`, palette-reduce (for tiling textures)
+
+style: >-
+  Style: painted 16-bit Amiga-era computer game art like late-1980s adventure games,
+  rich oil-painting colors, dramatic lighting, visible dithering and a limited palette,
+  crisp pixel edges, medieval England in the 12th century.
+sprite_style: >-
+  A single subject, fully visible and centered, on a perfectly flat solid magenta
+  (#FF00FF) background with no shadow, no ground and no scenery.
+suffix: No text, no letters, no logo, no watermark, no border, no frame.
+colors: 64
+
+assets:
+  # --- Backgrounds -----------------------------------------------------------
+  - id: title
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Title painting: a Saxon knight on a white horse on a hilltop, banner flying,
+      looking toward a distant stone castle across green valleys under a stormy sunset sky.
+
+  - id: map
+    kind: bg
+    size: [462, 400]
+    aspect: square 1:1
+    prompt: >-
+      A painted top-down map of England and Wales on aged parchment, surrounded by a dark
+      blue-green sea with small painted waves, green and brown hills, forests and rivers
+      drawn by hand like an old illustrated map. The land fills most of the image from
+      Scotland's border at the top to Cornwall and Kent at the bottom. No towns, no
+      castles, no labels, no compass rose.
+
+  - id: joust
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      First-person view from a knight's saddle looking straight down a long medieval
+      tournament field. The horizon sits slightly above the upper third of the image:
+      wooden grandstands full of colourful spectators and striped pavilions with pennants
+      line the far end. The lower part is an empty trampled grass field. Bright summer sky.
+      No knights, no horses, no fence or barrier in the field.
+
+  - id: corridor
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Side view, flat and straight-on like a 2D platform game background, of a long
+      castle corridor: grey stone block walls, two dark arched doorways near the left and
+      right edges, two burning wall torches in iron brackets between them, banners on the
+      wall. The bottom quarter of the image is a wooden plank floor seen from slightly
+      above. Dim warm torchlight. No people.
+
+  - id: siege
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Side view, flat like a 2D artillery game background, of open countryside under a
+      wide sky with soft clouds, rolling green hills far away on the horizon. The bottom
+      fifth of the image is flat grassy ground. No castle, no buildings, no people,
+      empty foreground.
+
+  - id: battle
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      A wide empty medieval battlefield seen from a low hill: overcast dramatic sky in
+      the upper 40% of the image, distant woods and hills on the horizon, and a broad
+      flat grassy plain with trampled earth filling the lower 60%. No soldiers, no
+      buildings, no people.
+
+  - id: intro
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Story painting: a Saxon lord in a blue cloak rides out of a castle gate at dawn at
+      the head of a column of spearmen and mounted knights carrying banners, mist over
+      the fields ahead.
+
+  - id: victory
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Story painting: a coronation in a great Romanesque stone cathedral, a Saxon lord
+      kneels as a golden crown is placed on his head, nobles and knights cheer, shafts of
+      golden light from tall windows. Only 12th-century heraldic banners: plain fields
+      with a single gold lion, cross or dragon. No stripes, no stars, no modern flags.
+
+  - id: defeat
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Story painting at night: a Saxon castle burning, red and gold Norman banners raised
+      on its walls, smoke against a dark red sky, a broken shield and sword lying in the
+      mud in the foreground.
+
+  # --- Hero portraits --------------------------------------------------------
+  - id: hero_edwin
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a wise Saxon nobleman in his forties, short brown
+      beard, steady gaze, chain mail under a deep blue cloak with a bronze brooch, dark
+      neutral background.
+
+  - id: hero_aldric
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a fierce young Saxon warrior, long blond hair,
+      scar on his cheek, confident grin, chain mail and a sword hilt over his shoulder,
+      dark neutral background.
+
+  - id: hero_godwin
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a proud Saxon tournament knight in his thirties,
+      clean-shaven, dark hair, holding a steel helm under his arm, a lance with a
+      pennant behind him, dark neutral background.
+
+  - id: hero_wulfric
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a grizzled old Saxon veteran with a long grey beard
+      and braids, weathered face, fur-trimmed cloak over chain mail, dark neutral
+      background.
+
+  # --- Sprites ---------------------------------------------------------------
+  - id: joust_knight
+    kind: sprite
+    height: 240
+    tint: true
+    aspect: square 1:1
+    prompt: >-
+      A jousting knight on an armoured warhorse charging straight toward the viewer,
+      seen exactly head-on and symmetrical. The horse wears a caparison in a flat bright
+      pure green (#00FF00). The knight wears a steel great helm and holds a big heater
+      shield in front of his chest painted flat bright pure green (#00FF00) with no
+      emblem. His lance is lowered toward the viewer.
+
+  - id: lance
+    kind: sprite
+    height: 360
+    aspect: portrait 9:16
+    prompt: >-
+      A single wooden jousting lance standing perfectly vertical, point at the top,
+      with a large round steel vamplate hand guard near the bottom end. Plain painted
+      wood with spiral stripes.
+
+  - id: swordsman_hero
+    kind: sprite
+    height: 150
+    tint: true
+    aspect: portrait 3:4
+    prompt: >-
+      Full-body side view of a Saxon swordsman standing in a fighting stance facing
+      right, holding NO weapon: his right fist is held forward at chest height, empty.
+      Chain mail, round helmet, a tunic in a flat bright pure green (#00FF00), a small
+      round shield on his far arm also painted flat bright pure green (#00FF00).
+
+  - id: swordsman_guard
+    kind: sprite
+    height: 150
+    tint: true
+    aspect: portrait 3:4
+    prompt: >-
+      Full-body side view of a Norman castle guard standing in a fighting stance facing
+      right, holding NO weapon: his right fist is held forward at chest height, empty.
+      Conical helmet with a nose guard, long chain mail hauberk, a surcoat in a flat
+      bright pure green (#00FF00), a kite shield on his far arm also painted flat bright
+      pure green (#00FF00).
+
+  - id: sword
+    kind: sprite
+    height: 84
+    aspect: portrait 9:16
+    prompt: >-
+      A single medieval arming sword standing perfectly vertical, point at the top,
+      straight steel blade, simple brass crossguard, leather grip and round pommel.
+
+  - id: catapult
+    kind: sprite
+    height: 56
+    aspect: square 1:1
+    prompt: >-
+      Side view of a medieval wooden catapult (mangonel) facing right: a low wooden
+      frame on four wheels with an A-shaped upright support in the middle. The throwing
+      arm is removed: no arm, no bucket, no rope.
+
+  - id: keep
+    kind: sprite
+    height: 200
+    aspect: portrait 3:4
+    prompt: >-
+      Side view, flat 2D, of a square Norman stone castle keep: tall grey stone tower
+      with crenellations along the top, two narrow arrow-slit windows, a wooden door at
+      the bottom, no flag.
+
+  - id: hut
+    kind: sprite
+    height: 40
+    aspect: square 1:1
+    prompt: >-
+      Side view of a small medieval peasant hut with a thatched roof and wattle walls.
+
+  - id: soldier
+    kind: sprite
+    height: 22
+    tint: true
+    aspect: portrait 3:4
+    prompt: >-
+      Full-body side view of a medieval foot soldier marching to the right with a spear
+      held upright, wearing a helmet and a tunic in a flat bright pure green (#00FF00).
+
+  - id: knight
+    kind: sprite
+    height: 30
+    tint: true
+    aspect: square 1:1
+    prompt: >-
+      Side view of a mounted medieval knight riding to the right, lance raised upright,
+      the horse wearing a caparison in a flat bright pure green (#00FF00).
+
+  # --- Map and UI ------------------------------------------------------------
+  - id: shield
+    kind: sprite
+    height: 30
+    tint: true
+    aspect: square 1:1
+    prompt: >-
+      A heraldic heater shield seen from the front, with a gold metal rim, its field
+      painted flat bright pure green (#00FF00) with no emblem.
+
+  - id: castle_icon
+    kind: sprite
+    height: 18
+    aspect: square 1:1
+    prompt: >-
+      A tiny stone castle icon with two towers and a gate, seen from the front.
+
+  - id: banner
+    kind: sprite
+    height: 22
+    tint: true
+    aspect: square 1:1
+    prompt: >-
+      A swallow-tailed medieval pennant flying to the right from a short wooden pole,
+      the cloth flat bright pure green (#00FF00).
+
+  - id: parchment
+    kind: tile
+    size: [256, 256]
+    aspect: square 1:1
+    prompt: >-
+      Seamless texture of aged parchment paper, warm tan colour, subtle stains and fibres,
+      evenly lit, no edges, no writing.
+
+  - id: stone
+    kind: tile
+    size: [64, 64]
+    aspect: square 1:1
+    prompt: >-
+      Seamless texture of grey castle wall stone blocks in regular courses, seen straight
+      on, evenly lit.

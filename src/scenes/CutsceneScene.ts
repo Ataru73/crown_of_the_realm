@@ -1,10 +1,14 @@
 import Phaser from 'phaser';
 import { HEIGHT, SceneKeys, WIDTH, type SceneKey } from '../config';
+import { addBackdrop } from '../ui/assets';
+import { textStyle } from '../ui/theme';
 
 interface CutsceneData {
   text: string;
   next: SceneKey;
   nextData?: object;
+  /** Texture key of the painting; the campaign intro by default. */
+  image?: string;
 }
 
 /** Full-screen painting + caption; click to continue. */
@@ -14,24 +18,16 @@ export class CutsceneScene extends Phaser.Scene {
   }
 
   create(data: CutsceneData): void {
-    this.add.rectangle(0, 0, WIDTH, HEIGHT, 0x101010).setOrigin(0);
-    this.add.rectangle(WIDTH / 2, 160, 520, 260, 0x3a2a1a).setStrokeStyle(2, 0x8a6a3a);
+    addBackdrop(this, data.image ?? 'intro');
+    this.add.rectangle(0, HEIGHT - 84, WIDTH, 84, 0x000000, 0.65).setOrigin(0);
     this.add
-      .text(WIDTH / 2, 160, '[ painting ]', { fontFamily: 'Georgia, serif', color: '#8a6a3a' })
+      .text(WIDTH / 2, HEIGHT - 50, data.text, textStyle(16, '#f4e4bc', { wordWrap: { width: 580 }, align: 'center' }))
       .setOrigin(0.5);
     this.add
-      .text(WIDTH / 2, 330, data.text, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '16px',
-        color: '#f4e4bc',
-        wordWrap: { width: 560 },
-        align: 'center',
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(WIDTH / 2, 380, 'click to continue', { fontSize: '11px', color: '#888' })
+      .text(WIDTH / 2, HEIGHT - 12, 'click to continue', textStyle(11, '#a89878'))
       .setOrigin(0.5);
 
+    this.cameras.main.fadeIn(400);
     this.input.once('pointerup', () => this.scene.start(data.next, data.nextData));
   }
 }

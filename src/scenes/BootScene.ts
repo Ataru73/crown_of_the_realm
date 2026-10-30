@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { SceneKeys } from '../config';
+import { HEIGHT, SceneKeys, WIDTH } from '../config';
+import { loadAssets } from '../ui/assets';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -7,7 +8,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Real assets get loaded here once the asset pipeline (M7) produces them.
+    const bar = this.add.rectangle(WIDTH / 2 - 150, HEIGHT / 2, 0, 8, 0xd8c08a).setOrigin(0, 0.5);
+    this.add.rectangle(WIDTH / 2, HEIGHT / 2, 304, 12).setStrokeStyle(1, 0x8a6a3a);
+    this.load.on('progress', (p: number) => bar.setSize(300 * p, 8));
+    loadAssets(this);
   }
 
   create(): void {
