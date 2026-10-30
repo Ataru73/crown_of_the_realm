@@ -348,14 +348,66 @@ assets:
     alpha_cutoff: 50
     tint: true
 
+  # The catapult and siege wall are rendered in Blender by tools/assets/blender/catapult.py
+  # and wall.py, not painted by Gemini.
   - id: catapult
-    kind: sprite
-    height: 56
-    aspect: square 1:1
-    prompt: >-
-      Side view of a medieval wooden catapult (mangonel) facing right: a low wooden
-      frame on four wheels with an A-shaped upright support in the middle. The throwing
-      arm is removed: no arm, no bucket, no rope.
+    kind: render
+    frames: 1
+    single: true
+    scale: 1.70
+    alpha_cutoff: 50
+    tint: false
+
+  - id: catapult_arm
+    kind: render
+    frames: 1
+    single: true
+    scale: 1.70
+    alpha_cutoff: 50
+    tint: false
+
+  - id: wall_course_0
+    kind: render
+    frames: 3
+    scale: 10.0
+    alpha_cutoff: 50
+    tint: false
+
+  - id: wall_course_1
+    kind: render
+    frames: 3
+    scale: 10.0
+    alpha_cutoff: 50
+    tint: false
+
+  - id: wall_course_2
+    kind: render
+    frames: 3
+    scale: 10.0
+    alpha_cutoff: 50
+    tint: false
+
+  - id: wall_course_3
+    kind: render
+    frames: 3
+    scale: 10.0
+    alpha_cutoff: 50
+    tint: false
+
+  - id: wall_crenellations
+    kind: render
+    frames: 1
+    single: true
+    scale: 10.0
+    alpha_cutoff: 50
+    tint: false
+
+  - id: wall_rubble
+    kind: render
+    frames: 4
+    scale: 10.0
+    alpha_cutoff: 50
+    tint: false
 
   - id: keep
     kind: sprite

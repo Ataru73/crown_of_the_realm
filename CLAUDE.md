@@ -99,16 +99,16 @@ loops with a crossfaded seam, stings trimmed) into `public/assets/music/`.
    `pip3 --python tools/assets/.venv/bin/python install pillow pyyaml numpy`).
 4. Anchor points in the art are constants in the scenes, one per frame: the
    lance butt. Re-measure them after regenerating a sheet (a contact sheet with a 10 px grid helps).
-5. **Blender renders** (`kind: render`): the battle foot soldier, knight, swordsmen and joust knight are rigged models built
-   by `tools/assets/blender/soldier.py`, `knight.py`, `swordsman.py` and `joust.py`, which pose each animation in `ANIMS`
+5. **Blender renders** (`kind: render`): the battle foot soldier, knight, swordsmen, joust knight, catapult, and siege wall are 3D models built
+   by `tools/assets/blender/soldier.py`, `knight.py`, `swordsman.py`, `joust.py`, `catapult.py` and `wall.py`, which pose each animation in `ANIMS`
    (soldier: stand, walk, thrust; knight: rest, gallop, attack; swordsman hero & guard: idle, step,
-   windup, strike, parry, hit, fall; joust opponent: charge, struck) and render them
-   (orthographic side view for army/swordsmen, perspective head-on looking down lists for joust)
-   into `raw-assets/<unit>_<anim>/`, with `anchors.json` (feet, hand, tip, shield, shield_r, lance_tip) per frame. Run them in
+   windup, strike, parry, hit, fall; joust opponent: charge, struck; catapult: frame & rotating arm; wall: 4 courses across whole/cracked/broken states, crenellations, and 4-stage rubble) and render them
+   (orthographic side view for army/swordsmen/siege, perspective head-on looking down lists for joust)
+   into `raw-assets/<asset>/`, with `anchors.json` (feet, hand, tip, shield, shield_r, lance_tip, pivot, bucket) per frame. Run them in
    Blender through the Blender MCP (Blender runs on Windows and writes to the repo via
    `\\wsl.localhost\Ubuntu-24.04\...`), then `process.py`. Every frame of an animation is shrunk by the same `scale` and cropped
    to one box, and the anchors go into the manifest as `points` (`assetPoint` in
-   `ui/assets.ts`), so nothing is measured by hand. The tunic/caparison/shield is lit green
+   `ui/assets.ts`), so nothing is measured by hand. Sprites with a tint layer have the tunic/caparison/shield lit green
    (0, 165, 0), dark enough that its shading survives into the tint layer.
 
 ## Conventions
@@ -149,7 +149,7 @@ static assets on Cloudflare Workers.
 | M7 Gemini asset pass | ✅ |
 | M8 Cutscenes, Lyria music, SFX, balancing | ✅ |
 | M9 Polish, controls, deploy | ✅ |
-| M10 3D rendered animated sprites (B1 army, B2 swordsmen, B3 joust, B4 siege) | In progress (B1, B2, B3 ✅) |
+| M10 3D rendered animated sprites (B1 army, B2 swordsmen, B3 joust, B4 siege) | In progress (B1, B2, B3, B4 ✅) |
 
 There are 124 tests, all passing.
 
@@ -162,8 +162,10 @@ There are 124 tests, all passing.
   `src/data/music.json`. When regenerating: Lyria makes one ~3-minute take per chat
   and often fails in a long chat, so start a new chat per track; the take is a
   `<video>` (mp4) whose src can be fetched and relayed as audio/mp4.
-- Animation is key poses, not cycles: the catapult arm and the siege wall are drawn in code.
-  Joust opponent, swordsmen, battle soldiers and knights are Blender renders with real cycles and animations:
+- Animation is key poses, not cycles: only map banners remain static.
+  Catapult, siege wall, joust opponent, swordsmen, battle soldiers and knights are Blender renders:
+  catapult has frame and rotating arm with `pivot` and `bucket` anchors; siege wall has 4 courses
+  across 3 damage states (`whole`, `cracked`, `broken`), crenellations, and 4-stage rubble heaps;
   joust opponent has a 4-frame gallop cycle and 3-frame struck/unhorsing sequence with shield, shield_r
   and lance_tip anchors; soldier has stand, an 8-frame walk paced to the ground covered (`WALK_CYCLE_PX`),
   and a 3-frame thrust; knight has rest, a 6-frame gallop cycle paced to the ground covered (`GALLOP_CYCLE_PX`),

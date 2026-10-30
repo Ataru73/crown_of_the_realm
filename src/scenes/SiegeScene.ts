@@ -29,7 +29,7 @@ import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { GameState, TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
-import { addBackdrop, addTinted } from '../ui/assets';
+import { addBackdrop, addTinted, assetPoint } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 import { playMusic, sfx } from '../ui/audio';
 
@@ -51,9 +51,13 @@ export class SiegeScene extends Phaser.Scene {
   private siege!: Siege;
   private finished = false;
 
-  private arm!: Phaser.GameObjects.Graphics;
-  private wall!: Phaser.GameObjects.Graphics;
-  private courses: Phaser.GameObjects.TileSprite[] = [];
+  private catapultFrame!: Phaser.GameObjects.Image;
+  private catapultArm!: Phaser.GameObjects.Image;
+  private aimGuide!: Phaser.GameObjects.Graphics;
+  private ammoInBucket!: Phaser.GameObjects.Arc;
+  private courses: Phaser.GameObjects.Image[] = [];
+  private crenellations!: Phaser.GameObjects.Image;
+  private rubble!: Phaser.GameObjects.Image;
   private shot!: Phaser.GameObjects.Arc;
   private trail!: Phaser.GameObjects.Graphics;
   private lastTrail: { x: number; y: number }[] = [];
@@ -86,7 +90,6 @@ export class SiegeScene extends Phaser.Scene {
     this.aimDelta = 0;
 
     this.drawScenery();
-    this.wall = this.add.graphics();
     this.trail = this.add.graphics();
     this.drawCatapult();
     this.shot = this.add.circle(0, 0, 4, 0x6a6460).setVisible(false);
@@ -112,15 +115,33 @@ export class SiegeScene extends Phaser.Scene {
     // Rubble apron at the wall's foot.
     this.add.rectangle(front - 4, GROUND_Y - 3, back - front + 8, 3, 0x6a645a).setOrigin(0);
 
-    // One stone course per wall row, tinted darker as it cracks.
+    // One rendered stone course per wall row.
     this.courses = ROW_HP.map((_, r) =>
-      this.add.tileSprite(front, sy((r + 1) * ROW_HEIGHT), back - front, ROW_HEIGHT * SCALE, 'stone').setOrigin(0),
+      this.add.image(front, sy((r + 1) * ROW_HEIGHT), `wall_course_${r}_0`).setOrigin(0),
     );
+    this.crenellations = this.add.image(front, sy(4 * ROW_HEIGHT), 'wall_crenellations').setOrigin(0, 1);
+    this.rubble = this.add.image(front + (back - front) / 2, GROUND_Y, 'wall_rubble_0').setOrigin(0.5, 1).setVisible(false);
   }
 
   private drawCatapult(): void {
-    this.add.image(CATAPULT_X - 4, GROUND_Y + 2, 'catapult').setOrigin(0.5, 1).setScale(0.6);
-    this.arm = this.add.graphics({ x: CATAPULT_X - 4, y: sy(4) });
+    const scale = 0.6;
+    const fx = CATAPULT_X - 4;
+    const fy = GROUND_Y + 2;
+    this.catapultFrame = this.add.image(fx, fy, 'catapult').setOrigin(0.5, 1).setScale(scale);
+
+    const framePivot = assetPoint('catapult', 'pivot');
+    const armPivot = assetPoint('catapult_arm', 'pivot');
+
+    const pivotX = fx + (framePivot.x - this.catapultFrame.width * 0.5) * scale;
+    const pivotY = fy + (framePivot.y - this.catapultFrame.height * 1.0) * scale;
+
+    this.catapultArm = this.add
+      .image(pivotX, pivotY, 'catapult_arm')
+      .setOrigin(armPivot.x / this.catapultArm.width, armPivot.y / this.catapultArm.height)
+      .setScale(scale);
+
+    this.ammoInBucket = this.add.circle(0, 0, 4, 0x6a6460).setVisible(false);
+    this.aimGuide = this.add.graphics();
   }
 
   private drawUi(): void {
@@ -218,17 +239,44 @@ export class SiegeScene extends Phaser.Scene {
     const s = this.siege;
     this.drawWall();
 
-    // Throwing arm: at the throw angle, wound back toward the ground behind while charging.
+    // Throwing arm: rotated to the throw angle, wound back toward the ground behind while charging.
     const a = Phaser.Math.DegToRad(s.angle);
     const theta = s.phase === 'charge' ? a + s.power * (Phaser.Math.DegToRad(165) - a) : a;
-    const len = 30;
-    this.arm.clear().lineStyle(4, 0x6a4a2a).lineBetween(0, 0, Math.cos(theta) * len, -Math.sin(theta) * len);
+    this.catapultArm.setRotation(-theta);
+
+    const scale = 0.6;
+    const framePivot = assetPoint('catapult', 'pivot');
+    const armPivot = assetPoint('catapult_arm', 'pivot');
+    const armBucket = assetPoint('catapult_arm', 'bucket');
+
+    const pivotX = (CATAPULT_X - 4) + (framePivot.x - this.catapultFrame.width * 0.5) * scale;
+    const pivotY = (GROUND_Y + 2) + (framePivot.y - this.catapultFrame.height * 1.0) * scale;
+
+    const armDist = Phaser.Math.Distance.Between(armPivot.x, armPivot.y, armBucket.x, armBucket.y) * scale;
+    const armAngle0 = Phaser.Math.Angle.Between(armPivot.x, armPivot.y, armBucket.x, armBucket.y);
+
+    const bucketX = pivotX + Math.cos(-theta + armAngle0) * armDist;
+    const bucketY = pivotY + Math.sin(-theta + armAngle0) * armDist;
+
     if (s.phase === 'aim' || s.phase === 'charge') {
-      this.arm.fillStyle(s.ammo === 'fire' ? 0xff8a20 : 0x6a6460);
-      this.arm.fillCircle(Math.cos(theta) * len, -Math.sin(theta) * len, 4);
+      this.ammoInBucket
+        .setVisible(true)
+        .setPosition(bucketX, bucketY)
+        .setFillStyle(s.ammo === 'fire' ? 0xff8a20 : 0x6a6460);
+
       // Aim guide along the launch direction.
-      this.arm.lineStyle(1, 0xffffff, 0.6);
-      for (let d = 36; d < 76; d += 8) this.arm.lineBetween(Math.cos(a) * d, -Math.sin(a) * d, Math.cos(a) * (d + 4), -Math.sin(a) * (d + 4));
+      this.aimGuide.clear().lineStyle(1, 0xffffff, 0.6);
+      for (let d = armDist + 6; d < armDist + 46; d += 8) {
+        this.aimGuide.lineBetween(
+          pivotX + Math.cos(a) * d,
+          pivotY - Math.sin(a) * d,
+          pivotX + Math.cos(a) * (d + 4),
+          pivotY - Math.sin(a) * (d + 4),
+        );
+      }
+    } else {
+      this.ammoInBucket.setVisible(false);
+      this.aimGuide.clear();
     }
 
     if (s.shot) {
@@ -269,31 +317,35 @@ export class SiegeScene extends Phaser.Scene {
     }
   }
 
-  /** Courses of stone, darker the more they are cracked; fallen ones are gone. */
+  /** Courses of stone, crenellations, and rubble from 3D renders. */
   private drawWall(): void {
     const s = this.siege;
-    const g = this.wall.clear();
     const left = sx(s.distance);
-    const width = WALL_THICKNESS * SCALE;
     const standing = standingRows(s);
+
     this.courses.forEach((course, r) => {
-      const health = s.rows[r] / ROW_HP[r];
-      const shade = Math.round(110 + 145 * health);
-      course.setVisible(r < standing).setTint(Phaser.Display.Color.GetColor(shade, shade, shade));
-      const top = sy((r + 1) * ROW_HEIGHT);
-      if (r < standing && health < 1) {
-        g.lineStyle(1, 0x1a1814).lineBetween(left + 3, top + 4, left + width - 5, top + ROW_HEIGHT * SCALE - 3);
+      if (r >= standing) {
+        course.setVisible(false);
+        return;
       }
+      course.setVisible(true);
+      const hp = s.rows[r];
+      const maxHp = ROW_HP[r];
+      const state = hp === maxHp ? 0 : hp > 1 ? 1 : 2;
+      course.setTexture(`wall_course_${r}_${state}`);
     });
+
     if (standing > 0) {
-      const top = sy(standing * ROW_HEIGHT);
-      g.fillStyle(0x8a8478);
-      for (let x = left; x < left + width; x += 8) g.fillRect(x, top - 6, 5, 6);
+      this.crenellations.setVisible(true).setPosition(left, sy(standing * ROW_HEIGHT));
+    } else {
+      this.crenellations.setVisible(false);
     }
-    // Rubble from the fallen courses.
+
     const fallen = ROW_HP.length - standing;
     if (fallen > 0) {
-      g.fillStyle(0x6a645a).fillTriangle(left - 8 - fallen * 3, GROUND_Y, left + width + 8, GROUND_Y, left + width / 2, GROUND_Y - 4 - fallen * 3);
+      this.rubble.setVisible(true).setTexture(`wall_rubble_${fallen - 1}`);
+    } else {
+      this.rubble.setVisible(false);
     }
   }
 

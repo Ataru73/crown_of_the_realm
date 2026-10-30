@@ -245,7 +245,7 @@ def process_render(asset: dict, colors: int) -> list[dict]:
     box = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
     entries = []
     for i, ((im, tint_im), points) in enumerate(zip(frames, anchors["frames"])):
-        fid = f"{asset['id']}_{i}"
+        fid = asset['id'] if asset.get("single", False) else f"{asset['id']}_{i}"
         entry = {"id": fid}
         if tint_im is not None:
             finish_sprite(tint_im.crop(box), None, cutoff).save(OUT / f"{fid}_tint.png", optimize=True)
@@ -260,6 +260,8 @@ def process_render(asset: dict, colors: int) -> list[dict]:
 
 def output_ids(asset: dict) -> list[str]:
     if asset["kind"] == "render":
+        if asset.get("single", False):
+            return [asset["id"]]
         return [f"{asset['id']}_{i}" for i in range(asset["frames"])]
     if asset["kind"] == "sheet":
         return [f"{asset['id']}_{f}" for f in asset["frames"]]

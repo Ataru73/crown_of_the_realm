@@ -191,10 +191,21 @@ export class BattleScene extends Phaser.Scene {
     for (let i = 0; i < soldiers; i++) {
       figures.push({ unit: 'soldier', x: start + dir * (Math.floor(i / 8) * 9), y: 194 + (i % 8) * 12 });
     }
+    const catPivot = assetPoint('catapult', 'pivot');
+    const armPivot = assetPoint('catapult_arm', 'pivot');
     for (let i = 0; i < Math.min(army.catapults, 6); i++) {
       const x = x0 - dir * (24 + i * 4);
       const y = 282 - i * 14;
-      this.troops.add(this.add.image(x, y, 'catapult').setOrigin(0.5, 1).setScale(0.3 * dir, 0.3));
+      const frame = this.add.image(x, y, 'catapult').setOrigin(0.5, 1).setScale(0.3 * dir, 0.3);
+      this.troops.add(frame);
+      const px = x + (catPivot.x - frame.width * 0.5) * 0.3 * dir;
+      const py = y + (catPivot.y - frame.height * 1.0) * 0.3;
+      const arm = this.add
+        .image(px, py, 'catapult_arm')
+        .setOrigin(armPivot.x / 64, armPivot.y / 11)
+        .setScale(0.3 * dir, 0.3)
+        .setRotation(dir > 0 ? -0.7 : 0.7);
+      this.troops.add(arm);
     }
     // Nearer (lower) figures overlap the ones behind them.
     figures.sort((a, b) => a.y - b.y);

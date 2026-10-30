@@ -1130,9 +1130,168 @@
   {
     "id": "catapult",
     "size": [
-      95,
-      56
-    ]
+      77,
+      44
+    ],
+    "points": {
+      "pivot": [
+        45,
+        12
+      ]
+    }
+  },
+  {
+    "id": "catapult_arm",
+    "size": [
+      64,
+      11
+    ],
+    "points": {
+      "pivot": [
+        14,
+        7
+      ],
+      "bucket": [
+        59,
+        5
+      ]
+    }
+  },
+  {
+    "id": "wall_course_0_0",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_0_1",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_0_2",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_1_0",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_1_1",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_1_2",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_2_0",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_2_1",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_2_2",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_3_0",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_3_1",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_course_3_2",
+    "size": [
+      20,
+      20
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_crenellations",
+    "size": [
+      20,
+      6
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_rubble_0",
+    "size": [
+      42,
+      18
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_rubble_1",
+    "size": [
+      42,
+      18
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_rubble_2",
+    "size": [
+      42,
+      18
+    ],
+    "points": {}
+  },
+  {
+    "id": "wall_rubble_3",
+    "size": [
+      42,
+      18
+    ],
+    "points": {}
   },
   {
     "id": "keep",
