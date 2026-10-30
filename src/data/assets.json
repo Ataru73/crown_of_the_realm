@@ -614,28 +614,184 @@
     }
   },
   {
-    "id": "knight_ride",
+    "id": "knight_rest_0",
     "tint": true,
     "size": [
-      24,
+      25,
       37
-    ]
+    ],
+    "points": {
+      "feet": [
+        12,
+        36
+      ],
+      "hand": [
+        16,
+        21
+      ]
+    }
   },
   {
-    "id": "knight_stride",
+    "id": "knight_gallop_0",
     "tint": true,
     "size": [
-      27,
-      37
-    ]
+      46,
+      26
+    ],
+    "points": {
+      "feet": [
+        17,
+        25
+      ],
+      "hand": [
+        24,
+        8
+      ]
+    }
   },
   {
-    "id": "knight_attack",
+    "id": "knight_gallop_1",
     "tint": true,
     "size": [
-      29,
-      23
-    ]
+      46,
+      26
+    ],
+    "points": {
+      "feet": [
+        17,
+        25
+      ],
+      "hand": [
+        24,
+        10
+      ]
+    }
+  },
+  {
+    "id": "knight_gallop_2",
+    "tint": true,
+    "size": [
+      46,
+      26
+    ],
+    "points": {
+      "feet": [
+        17,
+        26
+      ],
+      "hand": [
+        25,
+        9
+      ]
+    }
+  },
+  {
+    "id": "knight_gallop_3",
+    "tint": true,
+    "size": [
+      46,
+      26
+    ],
+    "points": {
+      "feet": [
+        17,
+        25
+      ],
+      "hand": [
+        24,
+        9
+      ]
+    }
+  },
+  {
+    "id": "knight_gallop_4",
+    "tint": true,
+    "size": [
+      46,
+      26
+    ],
+    "points": {
+      "feet": [
+        17,
+        25
+      ],
+      "hand": [
+        24,
+        9
+      ]
+    }
+  },
+  {
+    "id": "knight_gallop_5",
+    "tint": true,
+    "size": [
+      46,
+      26
+    ],
+    "points": {
+      "feet": [
+        17,
+        25
+      ],
+      "hand": [
+        24,
+        9
+      ]
+    }
+  },
+  {
+    "id": "knight_attack_0",
+    "tint": true,
+    "size": [
+      44,
+      31
+    ],
+    "points": {
+      "feet": [
+        14,
+        30
+      ],
+      "hand": [
+        20,
+        15
+      ]
+    }
+  },
+  {
+    "id": "knight_attack_1",
+    "tint": true,
+    "size": [
+      44,
+      31
+    ],
+    "points": {
+      "feet": [
+        14,
+        30
+      ],
+      "hand": [
+        22,
+        12
+      ]
+    }
+  },
+  {
+    "id": "knight_attack_2",
+    "tint": true,
+    "size": [
+      44,
+      31
+    ],
+    "points": {
+      "feet": [
+        14,
+        30
+      ],
+      "hand": [
+        19,
+        15
+      ]
+    }
   },
   {
     "id": "shield",

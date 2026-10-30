@@ -10,7 +10,7 @@ interface AssetEntry {
   /** Has an `<id>_tint` layer: the areas painted in the lord's colour. */
   tint?: boolean;
   /** Named points in the image's pixels, for frames rendered in Blender (e.g. `feet`). */
-  points?: Record<string, number[]>;
+  points?: Record<string, number[] | undefined>;
 }
 
 const ASSETS: AssetEntry[] = manifest;

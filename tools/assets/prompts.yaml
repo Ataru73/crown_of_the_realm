@@ -347,19 +347,28 @@ assets:
     alpha_cutoff: 50
     tint: true
 
-  - id: knight
-    kind: sheet
-    frames: [ride, stride, attack]
-    height: 37
+  # The battle knight is rendered in Blender by tools/assets/blender/knight.py, not
+  # painted by Gemini: rest (1 frame), gallop (6 frames) and attack (3 frames).
+  - id: knight_rest
+    kind: render
+    frames: 1
+    scale: 7.4
     alpha_cutoff: 50
     tint: true
-    aspect: landscape 16:9
-    prompt: >-
-      Three side-view poses of a mounted medieval knight riding to the right, the horse
-      wearing a caparison in a flat bright pure green (#00FF00). From left to right:
-      (1) trotting, lance raised upright; (2) galloping, the horse's legs stretched out
-      front and back, lance raised upright; (3) charging, lance lowered level and pointing
-      forward, the horse at full gallop. Simple bold shapes that read at a tiny size.
+
+  - id: knight_gallop
+    kind: render
+    frames: 6
+    scale: 7.4
+    alpha_cutoff: 50
+    tint: true
+
+  - id: knight_attack
+    kind: render
+    frames: 3
+    scale: 7.4
+    alpha_cutoff: 50
+    tint: true
 
   # --- Map and UI ------------------------------------------------------------
   - id: shield

@@ -47,13 +47,11 @@ function describeLosses(a: Army): string {
 /** Keys 1 to 5 pick the tactics. */
 const DIGITS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
 
-type KnightFrame = 'rest' | 'stride' | 'attack';
-/** The knight's frames (`knight_<name>`) and the point between its feet in each. */
-const KNIGHT_FRAMES: Record<KnightFrame, { name: string; x: number; y: number }> = {
-  rest: { name: 'ride', x: 11, y: 37 },
-  stride: { name: 'stride', x: 14, y: 37 },
-  attack: { name: 'attack', x: 12, y: 23 },
-};
+/** The knight's animations, rendered in Blender: `knight_<anim>_<n>`, each with its feet point. */
+const KNIGHT_ANIMS = { rest: 1, gallop: 6, attack: 3 };
+type KnightAnim = keyof typeof KNIGHT_ANIMS;
+/** How far a knight moves in one gallop cycle, so the hooves don't slide. */
+const GALLOP_CYCLE_PX = 46;
 /** The soldier's animations, rendered in Blender: `soldier_<anim>_<n>`, each with its feet point. */
 const SOLDIER_FRAMES = { stand: 1, walk: 8, thrust: 3 };
 type SoldierAnim = keyof typeof SOLDIER_FRAMES;
@@ -66,9 +64,9 @@ interface Pose {
   origin: { x: number; y: number };
 }
 
-function knightPose(frame: KnightFrame): Pose {
-  const def = KNIGHT_FRAMES[frame];
-  return { key: `knight_${def.name}`, origin: def };
+function knightPose(anim: KnightAnim, n: number): Pose {
+  const key = `knight_${anim}_${n}`;
+  return { key, origin: assetPoint(key, 'feet') };
 }
 
 function soldierPose(anim: SoldierAnim, n: number): Pose {
@@ -201,7 +199,7 @@ export class BattleScene extends Phaser.Scene {
     // Nearer (lower) figures overlap the ones behind them.
     figures.sort((a, b) => a.y - b.y);
     for (const f of figures) {
-      const rest = f.unit === 'knight' ? knightPose('rest') : soldierPose('stand', 0);
+      const rest = f.unit === 'knight' ? knightPose('rest', 0) : soldierPose('stand', 0);
       const sprite = addTinted(this, f.x, f.y, rest.key, color, rest.origin).setScale(dir, 1);
       this.troops.add(sprite);
       this.figures.push({ unit: f.unit, sprite, x: f.x, dir, frame: rest.key });
@@ -232,8 +230,13 @@ export class BattleScene extends Phaser.Scene {
           const moved = reach * Phaser.Math.Easing.Sine.Out(march);
           f.sprite.setX(f.x + f.dir * moved);
           if (f.unit === 'knight') {
-            // Neighbours step out of time with each other.
-            this.pose(f, knightPose(t >= MARCH_SHARE ? 'attack' : Math.floor(march * 6 + i) % 2 ? 'stride' : 'rest'));
+            if (t >= MARCH_SHARE) {
+              this.pose(f, knightPose('attack', Math.min(KNIGHT_ANIMS.attack - 1, Math.floor(strike * KNIGHT_ANIMS.attack))));
+            } else {
+              // The gallop keeps pace with the ground covered; neighbours start on different frames.
+              const step = Math.floor((moved / GALLOP_CYCLE_PX) * KNIGHT_ANIMS.gallop) + i * 2;
+              this.pose(f, knightPose('gallop', step % KNIGHT_ANIMS.gallop));
+            }
           } else if (t >= MARCH_SHARE) {
             this.pose(f, soldierPose('thrust', Math.min(SOLDIER_FRAMES.thrust - 1, Math.floor(strike * SOLDIER_FRAMES.thrust))));
           } else {
