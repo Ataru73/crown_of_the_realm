@@ -178,6 +178,7 @@ everything in `CREDITS.md`.
 | **M7** | Asset pass with Gemini: style lock, generate, process, swap placeholders | All placeholders replaced |
 | **M8** | Cutscenes, music/SFX, balancing, difficulty via hero choice | Complete game loop with story beats |
 | **M9** | Polish: settings, keyboard/mouse/touch controls, build & deploy (e.g. GitHub Pages) | Static build hosted |
+| **M10** | Blender renders for the animated units, catapult and siege wall (§8) | No hand-measured anchors left; every unit animates in cycles |
 
 Placeholders first (M0–M6) so gameplay is never blocked on art; the asset pass (M7)
 can start in parallel once the style is locked, since it only needs the asset list
@@ -197,3 +198,136 @@ and sizes.
    difficulty settings).
 3. Gemini access: which Google account in Chrome, and image limits per day — sets
    how fast M7 can go.
+
+## 8. Blender renders (M10)
+
+The battle foot soldier (`tools/assets/blender/soldier.py`) showed that Blender is better
+than Gemini at everything that has to **match itself**: frames of one animation, the
+same figure seen at many sizes, and anchor points, which come out of the render instead
+of being measured by hand. Gemini stays the tool for one-off paintings.
+
+| Asset | Today | In Blender | Payoff |
+|---|---|---|---|
+| Battle knight (`knight`) | 3 Gemini poses, measured `KNIGHT_FRAMES` | horse + rider rig: rest, gallop cycle, attack | High: stands next to the rendered soldiers |
+| Swordsmen (`swordsman_hero`, `_guard`) | 6 Gemini poses, measured `FRAMES`, mirrored fall | one human rig, two outfits, full cycles | High: the largest animated sprites |
+| Joust opponent (`joust_knight`) | 3 Gemini poses, measured shield points | same horse + rider, seen head-on | Medium |
+| Catapult arm | drawn in code | rendered arm, rotated by Phaser | Medium |
+| Siege wall | stone tile tinted darker, crack lines in code | rendered courses with damage stages, rubble | Medium |
+| Map banner | still Gemini sprite | cloth-sim flutter loop | Low, optional |
+
+Not moving: backgrounds, portraits, cutscenes, the parchment and stone tiles, the
+first-person lance (all single paintings), and `castle_icon`/`hut`/`keep` (too small or
+too static to gain anything).
+
+### 8.1 Shared foundation (step B0)
+
+Before any new asset, split `soldier.py` into:
+
+- `tools/assets/blender/rig.py`: `clear`, `material` (with the shared `COLOURS`),
+  `build_armature(BONES)`, the `limb`/`ball`/`box`/`cone` builders, `swing`, `ground`,
+  `setup_render(res, px_per_m, camera)` and the render loop that keys each pose,
+  renders it and writes `anchors.json` from a dict of named world points per frame.
+  The camera is a parameter: orthographic side view (battle, sword, siege) or
+  perspective head-on (joust).
+- One script per asset (`soldier.py`, `knight.py`, `swordsman.py`, `joust.py`,
+  `catapult.py`, `wall.py`) holding only its bones, body and `ANIMS`.
+
+Scripts run through the MCP's `execute_blender_code`, where `__file__` is undefined, so
+each one puts `ROOT / "tools/assets/blender"` on `sys.path` before importing `rig`.
+
+Done when the soldier re-renders from the split scripts pixel-identical to the current
+`public/assets/soldier_*`.
+
+`process.py` already handles `kind: render` (one `scale`, one crop box per animation,
+every anchor key copied into `points`), so most assets need only new `prompts.yaml`
+entries. Two small additions: `tint: false` renders (catapult, wall), and an optional
+`height` instead of `scale`, to size a render to the sprite it replaces.
+
+### 8.2 Battle knight (B1)
+
+- **Horse:** built from primitives like the soldier, to stay in the same style and fully
+  original: barrel body, neck, head, two-segment legs, tail. Rig: `root`, `spine`,
+  `neck`, `head`, `upper`/`lower` per leg, `tail`. If primitives don't read as a horse at
+  37 px, fall back to `generate_3d` (original, so fine for the IP policy) and parent its
+  mesh to the same rig with automatic weights. Poly Haven (CC0) is acceptable; Sketchfab
+  is not, its licences vary.
+- **Rider:** the soldier's upper body (mail, helmet) sitting on the horse's `spine`, with
+  a lance or sword bone. The caparison and the rider's surcoat are tint green.
+- **Animations:** `rest` (1), `gallop` (6, a four-beat cycle), `attack` (3: raise,
+  strike, recover). Anchors per frame: `feet` (ground under the horse's centre), `hand`.
+- **Game:** `knightPose` uses `assetPoint` like `soldierPose`; `KNIGHT_FRAMES` goes. The
+  charge loops the gallop at `GALLOP_CYCLE_PX` (ground covered per cycle, measured from
+  the render) so the hooves don't slide.
+- **Sizing:** pick `scale`/`height` so it stands the same 37 px as the Gemini knight.
+
+### 8.3 Swordsmen (B2)
+
+- One human rig, extended from the soldier's: a `sword` bone in the near hand and a round
+  shield on the far forearm. Two outfits on it, matching the current prompts: the hero
+  (Saxon, round helmet, green tunic and shield) and the guard. Both share proportions,
+  so the fight is fair to the eye.
+- **Animations**, mapped to the phases of `src/model/sword.ts`: `idle` (2, a breathing
+  bob), `step` (4, forward/back footwork), `windup` (2), `strike` (2), `parry` (2), `hit`
+  (2), `fall` (4, ending on the ground the right way round, so `mirrored` goes).
+- **Sword:** render it with the figure, so the far arm and shield occlude it correctly,
+  and export `hand` and `tip` anchors. That replaces the separate `sword` sprite and its
+  per-phase angles in SwordScene; the tip anchor drives the clash sparks. (Decision at
+  the start of B2: if the angle-driven sword is worth keeping for its smoothness, render
+  the figures without it and export a `sword_angle` per frame instead.)
+- **Risk:** at 150 px the primitive look shows. Before building all frames, render the
+  idle pose over `corridor.png` and compare with the painted sprites. Remedies, in order:
+  bevels and more segments, a little noise in the base colours, an inverted-hull outline,
+  more palette colours in `process.py`.
+- **Game:** `FRAMES` goes; poses come from `assetPoint`. Frame timing follows the
+  model's phase durations, so no rule changes and no test changes.
+
+### 8.4 Joust opponent (B3)
+
+- Reuses the B1 horse and rider, with a lance and a tint-green shield.
+- Perspective camera at the player's eye height, looking down the lists, so the knight
+  comes at the camera slightly off-axis as now.
+- **Animations:** `charge` (4, the gallop seen head-on), `struck` (3: the hit, thrown back,
+  falling). Anchors: `shield` (centre, plus `shield_r` on its rim, giving the radius) and
+  `lance_tip`.
+- Rendered once at the `IMPACT_SCALE` size (240 px tall) and scaled down in game as today;
+  `KNIGHT_FRAMES` and `SHIELD_RADIUS` come from the manifest.
+
+### 8.5 Catapult and siege wall (B4)
+
+- **Catapult:** the frame without its arm (replaces `catapult`, used in SiegeScene and
+  the battle) plus the arm alone, both at the same scale. The arm swings in the view
+  plane, so one arm sprite rotated by Phaser is exact. Anchors: `pivot` on the frame and
+  on the arm, `bucket` on the arm (where the stone sits). SiegeScene's `arm` Graphics
+  becomes an image; the white wind-up marks stay in code.
+- **Wall:** one render per course in `ROW_HP` (4 rows) in three states, `whole`,
+  `cracked` and `broken` (a cell-fracture pass, a few stones knocked out), plus a rubble
+  pile at 1–4 fallen courses. `drawWall` picks the state from each row's health instead
+  of tinting the stone tile, and the crenellations and rubble come from the renders.
+  The dimensions follow `WALL_THICKNESS`, `ROW_HEIGHT` and `SCALE`, so the art lines up
+  with the model's hit boxes.
+
+### 8.6 Banner (B5, optional)
+
+A cloth-sim pennant on a pole, baked to a 6-frame loop with the cloth tint green.
+Played on the map at each owned territory. Skip it if it reads as noise at 22 px.
+
+### Order and checks
+
+| Step | Content | Commit |
+|---|---|---|
+| B0 | `rig.py` split, soldier re-rendered identical | `M10: shared Blender rig module` |
+| B1 | Battle knight | `M10: render the battle knight in Blender` |
+| B2 | Swordsmen | `M10: render the swordsmen in Blender` |
+| B3 | Joust opponent | `M10: render the joust knight in Blender` |
+| B4 | Catapult arm and siege wall | `M10: render the catapult and wall in Blender` |
+| B5 | Banner (optional) | `M10: animated banner` |
+
+For every step:
+1. A contact sheet of the new frames with a 10 px grid and the anchors marked, checked
+   before touching the game.
+2. The scene in the browser with the new sprites, next to the painted backgrounds and
+   the other units, at both lord colours; a short GIF for the fight scenes.
+3. `npm test` and `npm run typecheck`; the model doesn't change, so the tests should
+   not either.
+4. Update `CLAUDE.md` (Asset pipeline step 5, the "Animation is key poses" known issue)
+   and remove the Gemini prompts that no longer feed the game.
