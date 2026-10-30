@@ -32,7 +32,7 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
   - `types.ts` (GameState, Lord, Territory, Army), `map.ts`, `economy.ts`,
     `combat.ts` (field battle), `actions.ts` (one action per turn), `turn.ts`
     (`playTurn`, `endTurn`, `withRng`), `ai.ts`, `events.ts` (kidnap),
-    `joust.ts`, `sword.ts`, `save.ts`, `setup.ts` (`newGame`).
+    `joust.ts`, `sword.ts`, `siege.ts`, `save.ts`, `setup.ts` (`newGame`).
   - Randomness only comes from the seeded RNG (`rng.ts`, mulberry32), and its
     state lives in `GameState.rngState`. Use `withRng(state, fn)`, never
     `Math.random`, in the model.
@@ -41,7 +41,9 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
   (`src/game/session.ts`) and call model functions.
 - **Minigame flow:** MapScene starts the minigame scene. When it finishes, the
   minigame starts `Map` again with its result (`MapSceneData`: conquest,
-  tournament, raid, rescue). MapScene then plays that turn through
+  tournament, raid, rescue). Attacking a castle with catapults goes through
+  SiegeScene first, which hands its `SiegeResult` (wall damage, fires) to
+  BattleScene; `applySiege` turns it into the battle input. MapScene then plays that turn through
   `playTurn` with the outcome embedded in the action (`result` / `won`). With no
   outcome given, the model auto-resolves it, which is how AI lords act.
 - `src/ui/` has the placeholder widgets: Button, Dialog, MapView, BuyDialog and the theme.
@@ -78,12 +80,12 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
 | M3 Field battle scene, AI lords, March | ✅ |
 | M4 Jousting (first-person lance aim) | ✅ |
 | M5 Sword fight (raid + rescue), kidnap event | ✅ |
-| M6 Siege / catapult minigame | ⏳ next. `SiegeScene` is still a `MinigameScene` placeholder |
-| M7 Gemini asset pass (all art is still shapes and placeholders) | — |
+| M6 Siege / catapult minigame | ✅ |
+| M7 Gemini asset pass (all art is still shapes and placeholders) | ⏳ next |
 | M8 Cutscenes, Lyria music, SFX, balancing | — |
 | M9 Polish, controls, deploy | — |
 
-There are 102 tests, all passing.
+There are 115 tests, all passing.
 
 ### Known issues / deferred
 - Balance is off: the hero wins about 9% of simulated games, and the plan's
@@ -92,5 +94,7 @@ There are 102 tests, all passing.
 - The swordsmen's shields are drawn on the back arm. M7 art replaces them anyway.
 - Rescue victories show only a dialog. The romance cutscene is planned for M8,
   and `CutsceneScene` is still a placeholder.
+- The siege was tested in the browser by driving the scene from JS; the Attack
+  button's routing to it and a full hold-and-release play by hand are untested.
 - Not yet tested by hand in the browser (the model tests cover these): bombard,
   a won joust, jousting for land, the game-over defeat screen.

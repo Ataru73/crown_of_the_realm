@@ -14,6 +14,7 @@ import {
   type Tactic,
 } from '../model/combat';
 import { territoryDef } from '../model/map';
+import { applySiege, type SiegeResult } from '../model/siege';
 import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { Army, GameState, TerritoryId } from '../model/types';
@@ -59,7 +60,8 @@ export class BattleScene extends Phaser.Scene {
     super(SceneKeys.Battle);
   }
 
-  create(data: { target: TerritoryId }): void {
+  /** `siege`: the siege fought before this assault, if any. */
+  create(data: { target: TerritoryId; siege?: SiegeResult }): void {
     if (!session.state) {
       this.scene.start(SceneKeys.Title);
       return;
@@ -67,7 +69,8 @@ export class BattleScene extends Phaser.Scene {
     this.state = session.state;
     this.target = data.target;
     const player = playerLord(this.state);
-    this.battle = startBattle(battleInput(this.state, player.id, this.target));
+    const input = battleInput(this.state, player.id, this.target);
+    this.battle = startBattle(data.siege ? applySiege(input, data.siege) : input);
     this.attackerColor = lordColor(player.id);
     this.defenderColor = lordColor(this.state.territories[this.target].owner);
     this.buttons = {};
@@ -155,7 +158,7 @@ export class BattleScene extends Phaser.Scene {
     this.drawArmy(b.attacker, 60, 1, this.attackerColor);
     this.drawArmy(b.defender, WIDTH - 60, -1, this.defenderColor);
 
-    const walls = b.castle ? `   Castle walls: damage to defenders ÷${b.bonus}` : '';
+    const walls = b.castle ? `   Castle walls: damage to defenders ÷${Number(b.bonus.toFixed(2))}` : '';
     this.roundText.setText(`Round ${b.round}${walls}`);
     const line = (a: Army) => `${a.soldiers} soldiers  ${a.knights} knights  ·  strength ${strength(a)}`;
     this.countText.attacker.setText(`Your army: ${line(b.attacker)}`);

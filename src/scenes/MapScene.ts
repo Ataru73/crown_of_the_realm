@@ -184,9 +184,14 @@ export class MapScene extends Phaser.Scene {
     if (this.selected) this.act({ type: 'march', target: this.selected });
   }
 
-  /** The battle itself is fought in the battle scene, which comes back here with the result. */
+  /**
+   * The battle itself is fought in the battle scene, which comes back here with the result.
+   * A castle is first besieged when the army brings catapults.
+   */
   private attack(): void {
-    if (this.selected && this.isPlayerTurn()) this.scene.start(SceneKeys.Battle, { target: this.selected });
+    if (!this.selected || !this.isPlayerTurn()) return;
+    const siege = this.state.territories[this.selected].castle && this.player.army.catapults > 0;
+    this.scene.start(siege ? SceneKeys.Siege : SceneKeys.Battle, { target: this.selected });
   }
 
   private raid(): void {
