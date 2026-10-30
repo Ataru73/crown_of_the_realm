@@ -147,11 +147,27 @@
     ]
   },
   {
-    "id": "joust_knight",
+    "id": "joust_knight_charge",
     "tint": true,
     "size": [
       119,
       240
+    ]
+  },
+  {
+    "id": "joust_knight_stride",
+    "tint": true,
+    "size": [
+      119,
+      244
+    ]
+  },
+  {
+    "id": "joust_knight_struck",
+    "tint": true,
+    "size": [
+      140,
+      241
     ]
   },
   {
@@ -162,19 +178,99 @@
     ]
   },
   {
-    "id": "swordsman_hero",
+    "id": "swordsman_hero_idle",
     "tint": true,
     "size": [
-      85,
+      92,
       150
     ]
   },
   {
-    "id": "swordsman_guard",
+    "id": "swordsman_hero_windup",
     "tint": true,
     "size": [
-      79,
+      80,
+      161
+    ]
+  },
+  {
+    "id": "swordsman_hero_strike",
+    "tint": true,
+    "size": [
+      134,
+      138
+    ]
+  },
+  {
+    "id": "swordsman_hero_parry",
+    "tint": true,
+    "size": [
+      64,
+      143
+    ]
+  },
+  {
+    "id": "swordsman_hero_hit",
+    "tint": true,
+    "size": [
+      89,
+      133
+    ]
+  },
+  {
+    "id": "swordsman_hero_down",
+    "tint": true,
+    "size": [
+      135,
+      36
+    ]
+  },
+  {
+    "id": "swordsman_guard_idle",
+    "tint": true,
+    "size": [
+      91,
       150
+    ]
+  },
+  {
+    "id": "swordsman_guard_windup",
+    "tint": true,
+    "size": [
+      80,
+      160
+    ]
+  },
+  {
+    "id": "swordsman_guard_strike",
+    "tint": true,
+    "size": [
+      132,
+      138
+    ]
+  },
+  {
+    "id": "swordsman_guard_parry",
+    "tint": true,
+    "size": [
+      64,
+      143
+    ]
+  },
+  {
+    "id": "swordsman_guard_hit",
+    "tint": true,
+    "size": [
+      90,
+      131
+    ]
+  },
+  {
+    "id": "swordsman_guard_down",
+    "tint": true,
+    "size": [
+      133,
+      35
     ]
   },
   {
@@ -206,19 +302,51 @@
     ]
   },
   {
-    "id": "soldier",
+    "id": "soldier_march",
     "tint": true,
     "size": [
-      10,
+      8,
       22
     ]
   },
   {
-    "id": "knight",
+    "id": "soldier_stride",
     "tint": true,
     "size": [
-      25,
-      30
+      12,
+      22
+    ]
+  },
+  {
+    "id": "soldier_attack",
+    "tint": true,
+    "size": [
+      19,
+      17
+    ]
+  },
+  {
+    "id": "knight_ride",
+    "tint": true,
+    "size": [
+      24,
+      37
+    ]
+  },
+  {
+    "id": "knight_stride",
+    "tint": true,
+    "size": [
+      27,
+      37
+    ]
+  },
+  {
+    "id": "knight_attack",
+    "tint": true,
+    "size": [
+      29,
+      23
     ]
   },
   {

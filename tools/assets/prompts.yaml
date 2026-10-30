@@ -1,6 +1,7 @@
 # Image prompts for the M7 asset pass. Each prompt is sent to Gemini as
 #   "Generate an image, <aspect>. <style> <sprite_style if a sprite> <prompt> <suffix>"
-# and the download is saved as raw-assets/<id>.png, then processed by process.py.
+# (sheets use <sheet_style> instead of <sprite_style>) and the download is saved as
+# raw-assets/<id>.png, then processed by process.py.
 #
 # kinds:
 #   bg       cover-crop to `size`, palette-reduce
@@ -8,6 +9,10 @@
 #            `tint: true` also splits the bright green areas into <id>_tint.png
 #            (greyscale, tinted with the lord's colour in game) and greys them in the base
 #   tile     cover-crop to `size`, palette-reduce (for tiling textures)
+#   sheet    a row of poses of one sprite, cut apart into <id>_<frame>.png for each of
+#            `frames`; keyed and tinted like a sprite, all at the scale that makes the
+#            first pose `height` tall; `alpha_cutoff` (default 128) below 128 keeps
+#            thin lines in tiny sprites
 
 style: >-
   Style: painted 16-bit Amiga-era computer game art like late-1980s adventure games,
@@ -16,6 +21,12 @@ style: >-
 sprite_style: >-
   A single subject, fully visible and centered, on a perfectly flat solid magenta
   (#FF00FF) background with no shadow, no ground and no scenery.
+sheet_style: >-
+  A sprite sheet: the same character drawn several times in one row, evenly spaced
+  with wide empty gaps between the poses so that none of them touch or overlap, all at
+  the same scale and with their feet on the same ground line, identical in every
+  detail of costume and colour, on a perfectly flat solid magenta (#FF00FF) background
+  with no shadow, no ground and no scenery.
 suffix: No text, no letters, no logo, no watermark, no border, no frame.
 colors: 64
 
@@ -212,16 +223,30 @@ assets:
 
   # --- Sprites ---------------------------------------------------------------
   - id: joust_knight
-    kind: sprite
+    kind: sheet
+    frames: [charge, stride, struck]
     height: 240
     tint: true
-    aspect: square 1:1
+    aspect: landscape 16:9
+    # Sent on its own (no style or sheet_style), with the earlier single
+    # joust_knight sprite attached: without it Gemini raises the lances.
+    reference: the earlier single-pose joust_knight
     prompt: >-
-      A jousting knight on an armoured warhorse charging straight toward the viewer,
-      seen exactly head-on and symmetrical. The horse wears a caparison in a flat bright
-      pure green (#00FF00). The knight wears a steel great helm and holds a big heater
-      shield in front of his chest painted flat bright pure green (#00FF00) with no
-      emblem. His lance is lowered toward the viewer.
+      Redraw the attached knight as a sprite sheet of three poses, keeping him exactly
+      as he is: the same grey great helm and armour, the same brown horse, the
+      caparison and the heater shield both in flat bright pure green (#00FF00), seen
+      exactly head-on, charging straight at the viewer. In every pose his lance is
+      couched under his arm and points straight at the viewer, foreshortened, never
+      raised. Style: painted 16-bit Amiga-era computer game art like late-1980s
+      adventure games, rich oil-painting colors, visible dithering and a limited
+      palette, crisp pixel edges. The three poses stand side by side in one row with
+      wide empty gaps between them so that none of them touch, all at the same scale,
+      on a perfectly flat solid magenta (#FF00FF) background with no shadow, no ground
+      and no scenery. From left to right: (1) galloping, both forelegs together,
+      exactly like the attached image; (2) the next stride of the gallop, the horse's
+      right foreleg lifted high and its left foreleg on the ground, head slightly
+      lowered; (3) struck hard on the shield, the knight thrown back in the saddle, his
+      lance knocked aside, the horse's head tossed up.
 
   - id: lance
     kind: sprite
@@ -233,27 +258,38 @@ assets:
       wood with spiral stripes.
 
   - id: swordsman_hero
-    kind: sprite
+    kind: sheet
+    frames: [idle, windup, strike, parry, hit, down]
     height: 150
     tint: true
-    aspect: portrait 3:4
+    aspect: landscape 16:9
     prompt: >-
-      Full-body side view of a Saxon swordsman standing in a fighting stance facing
-      right, holding NO weapon: his right fist is held forward at chest height, empty.
-      Chain mail, round helmet, a tunic in a flat bright pure green (#00FF00), a small
-      round shield on his far arm also painted flat bright pure green (#00FF00).
+      Six full-body side-view poses of a Saxon swordsman. Chain mail, round helmet, a tunic in a flat bright pure green
+      (#00FF00), a small round shield on his far arm also painted flat bright pure green
+      (#00FF00). He faces right in every pose and holds
+      NO weapon in any of them: his right hand is always an empty fist. From left to
+      right: (1) standing in a fighting stance, fist held forward at chest height;
+      (2) winding up, fist raised high above his head; (3) lunging forward to strike,
+      front knee bent, fist thrust far forward at chest height; (4) parrying, fist held
+      up in front of his face, leaning back; (5) staggering backward from a blow, head
+      thrown back, arms flung wide; (6) fallen, lying flat on his back on the ground.
 
   - id: swordsman_guard
-    kind: sprite
+    kind: sheet
+    frames: [idle, windup, strike, parry, hit, down]
     height: 150
     tint: true
-    aspect: portrait 3:4
+    aspect: landscape 16:9
     prompt: >-
-      Full-body side view of a Norman castle guard standing in a fighting stance facing
-      right, holding NO weapon: his right fist is held forward at chest height, empty.
-      Conical helmet with a nose guard, long chain mail hauberk, a surcoat in a flat
-      bright pure green (#00FF00), a kite shield on his far arm also painted flat bright
-      pure green (#00FF00).
+      Six full-body side-view poses of a Norman castle guard. Conical helmet with a nose guard, long chain mail hauberk, a
+      surcoat in a flat bright pure green (#00FF00), a kite shield on his far arm also
+      painted flat bright pure green (#00FF00). He faces right in every pose and holds
+      NO weapon in any of them: his right hand is always an empty fist. From left to
+      right: (1) standing in a fighting stance, fist held forward at chest height;
+      (2) winding up, fist raised high above his head; (3) lunging forward to strike,
+      front knee bent, fist thrust far forward at chest height; (4) parrying, fist held
+      up in front of his face, leaning back; (5) staggering backward from a blow, head
+      thrown back, arms flung wide; (6) fallen, lying flat on his back on the ground.
 
   - id: sword
     kind: sprite
@@ -289,22 +325,32 @@ assets:
       Side view of a small medieval peasant hut with a thatched roof and wattle walls.
 
   - id: soldier
-    kind: sprite
+    kind: sheet
+    frames: [march, stride, attack]
     height: 22
+    alpha_cutoff: 50
     tint: true
-    aspect: portrait 3:4
+    aspect: landscape 16:9
     prompt: >-
-      Full-body side view of a medieval foot soldier marching to the right with a spear
-      held upright, wearing a helmet and a tunic in a flat bright pure green (#00FF00).
+      Three full-body side-view poses of a medieval foot soldier facing right, wearing a
+      helmet and a tunic in a flat bright pure green (#00FF00). From left to right:
+      (1) marching with a spear held upright, legs together; (2) mid-stride, legs wide
+      apart, spear upright; (3) thrusting the spear forward level at waist height,
+      lunging. Simple bold shapes that read at a tiny size.
 
   - id: knight
-    kind: sprite
-    height: 30
+    kind: sheet
+    frames: [ride, stride, attack]
+    height: 37
+    alpha_cutoff: 50
     tint: true
-    aspect: square 1:1
+    aspect: landscape 16:9
     prompt: >-
-      Side view of a mounted medieval knight riding to the right, lance raised upright,
-      the horse wearing a caparison in a flat bright pure green (#00FF00).
+      Three side-view poses of a mounted medieval knight riding to the right, the horse
+      wearing a caparison in a flat bright pure green (#00FF00). From left to right:
+      (1) trotting, lance raised upright; (2) galloping, the horse's legs stretched out
+      front and back, lance raised upright; (3) charging, lance lowered level and pointing
+      forward, the horse at full gallop. Simple bold shapes that read at a tiny size.
 
   # --- Map and UI ------------------------------------------------------------
   - id: shield

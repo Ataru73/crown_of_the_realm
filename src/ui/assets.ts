@@ -47,6 +47,21 @@ export function setTintColor(sprite: Phaser.GameObjects.Container, color: number
   (sprite.list[1] as Phaser.GameObjects.Image).setTint(color);
 }
 
+/** Shows another frame (`key` and its `_tint` layer) in a container made by `addTinted`. */
+export function setTintedFrame(
+  sprite: Phaser.GameObjects.Container,
+  key: string,
+  origin?: { x: number; y: number },
+): void {
+  const [base, tint] = sprite.list as Phaser.GameObjects.Image[];
+  base.setTexture(key);
+  tint.setTexture(`${key}_tint`);
+  if (origin) {
+    base.setOrigin(origin.x / base.width, origin.y / base.height);
+    tint.setOrigin(origin.x / base.width, origin.y / base.height);
+  }
+}
+
 /** A full-screen painting with its top-left at the origin. */
 export function addBackdrop(scene: Phaser.Scene, key: string): Phaser.GameObjects.Image {
   return scene.add.image(0, 0, key).setOrigin(0);

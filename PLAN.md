@@ -120,7 +120,8 @@ simple result object (`{ outcome: 'win', goldStolen: 120 }`) back to `MapScene`.
    - crop/resize to target size (backgrounds 640×400);
    - background removal for sprites (chroma-key magenta, `rembg` as fallback);
    - **palette reduction** to 32–64 colors with light dithering for the retro look;
-   - pack sprite frames into sheets + Phaser JSON atlas.
+   - cut pose sheets (all of a character's poses in one Gemini image) into one PNG
+     per frame. (Planned as an atlas; separate images turned out simpler.)
 4. **Review:** contact sheet of all assets, regenerate the off-style ones.
 
 Risk: Gemini won't keep a character identical across poses. Mitigations: upload the

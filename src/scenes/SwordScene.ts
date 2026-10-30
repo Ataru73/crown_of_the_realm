@@ -19,7 +19,7 @@ import {
 import { withRng } from '../model/turn';
 import type { GameState, Lord, LordId } from '../model/types';
 import { Button } from '../ui/Button';
-import { addBackdrop, addTinted } from '../ui/assets';
+import { addBackdrop, addTinted, setTintedFrame } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 import { playMusic, sfx } from '../ui/audio';
 
@@ -31,22 +31,52 @@ const GUARD_X = 390;
 const ENTER_FROM_X = WIDTH + 60;
 /** The torches in the corridor painting. */
 const TORCHES = [[163, 140], [477, 140]];
-/** Where each swordsman sprite stands and holds his sword, in its own pixels. */
-const FIGHTER_POSE = {
-  swordsman_hero: { feet: { x: 35, y: 150 }, hand: { x: 42, y: 43 } },
-  swordsman_guard: { feet: { x: 37, y: 150 }, hand: { x: 38, y: 50 } },
+type Fighter = 'swordsman_hero' | 'swordsman_guard';
+/** The frames of each swordsman (`<key>_<frame>`). */
+type Frame = 'idle' | 'windup' | 'strike' | 'parry' | 'hit' | 'down';
+interface Anchor {
+  /** The point on the floor under his hips. */
+  feet: { x: number; y: number };
+  /** His sword hand. */
+  hand: { x: number; y: number };
+}
+/** Where each frame stands and holds the sword, in the frame's own pixels. */
+const FRAMES: Record<Fighter, Record<Frame, Anchor>> = {
+  swordsman_hero: {
+    idle: { feet: { x: 37, y: 150 }, hand: { x: 85, y: 47 } },
+    windup: { feet: { x: 42, y: 161 }, hand: { x: 27, y: 6 } },
+    strike: { feet: { x: 60, y: 138 }, hand: { x: 128, y: 32 } },
+    parry: { feet: { x: 31, y: 143 }, hand: { x: 45, y: 15 } },
+    hit: { feet: { x: 41, y: 133 }, hand: { x: 6, y: 36 } },
+    down: { feet: { x: 67, y: 36 }, hand: { x: 82, y: 31 } },
+  },
+  swordsman_guard: {
+    idle: { feet: { x: 37, y: 150 }, hand: { x: 85, y: 48 } },
+    windup: { feet: { x: 42, y: 160 }, hand: { x: 27, y: 5 } },
+    strike: { feet: { x: 59, y: 138 }, hand: { x: 126, y: 33 } },
+    parry: { feet: { x: 32, y: 143 }, hand: { x: 45, y: 17 } },
+    hit: { feet: { x: 40, y: 131 }, hand: { x: 4, y: 37 } },
+    down: { feet: { x: 66, y: 35 }, hand: { x: 76, y: 30 } },
+  },
 };
 /** The grip in the sword sprite, as a fraction of its height. */
 const SWORD_GRIP = 0.86;
 
 /** Sword angles in degrees: 0 points straight up, positive leans toward the foe. */
-const POSE = { idle: 35, raised: -75, struck: 115, parry: 5 };
+const POSE = { idle: 35, raised: -75, struck: 115, parry: 5, flung: -50, dropped: 90 };
 /** How long a guard's blade stays down after he strikes. */
 const SLASH_MS = 200;
+/** How long a guard holds his guard up after blocking a blow. */
+const BLOCK_MS = 250;
+/** The hero's swing shows the wind-up frame for this share of its time, then the strike. */
+const WINDUP_SHARE = 0.4;
 
-interface Fighter {
+interface Swordsman {
+  key: Fighter;
   body: Phaser.GameObjects.Container;
+  figure: Phaser.GameObjects.Container;
   sword: Phaser.GameObjects.Container;
+  frame?: Frame;
 }
 
 /** A side-on duel down a castle corridor, one guard after another. */
@@ -58,9 +88,10 @@ export class SwordScene extends Phaser.Scene {
   private fight!: Fight;
   private finished = false;
   private slash = 0;
+  private block = 0;
 
-  private hero!: Fighter;
-  private guard!: Fighter;
+  private hero!: Swordsman;
+  private guard!: Swordsman;
   private warning!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
@@ -93,6 +124,7 @@ export class SwordScene extends Phaser.Scene {
     );
     this.finished = false;
     this.slash = 0;
+    this.block = 0;
 
     this.drawCorridor();
     this.hero = this.drawFighter('swordsman_hero', lordColor(this.player.id), 1);
@@ -125,15 +157,27 @@ export class SwordScene extends Phaser.Scene {
 
   /**
    * A swordsman facing right (`facing` 1) or left (-1), his tunic in `color`;
-   * the body's origin is between his feet, the sword's origin is his sword hand.
+   * the body's origin is on the floor under him, the sword's origin is his sword hand.
    */
-  private drawFighter(key: 'swordsman_hero' | 'swordsman_guard', color: number, facing: 1 | -1): Fighter {
-    const pose = FIGHTER_POSE[key];
-    const figure = addTinted(this, 0, 0, key, color, pose.feet);
+  private drawFighter(key: Fighter, color: number, facing: 1 | -1): Swordsman {
+    const figure = addTinted(this, 0, 0, `${key}_idle`, color);
     const blade = this.add.image(0, 0, 'sword').setOrigin(0.5, SWORD_GRIP);
-    const sword = this.add.container(pose.hand.x - pose.feet.x, pose.hand.y - pose.feet.y, [blade]);
+    const sword = this.add.container(0, 0, [blade]);
     const body = this.add.container(ENTER_FROM_X, FLOOR_Y, [figure, sword]).setScale(facing, 1);
-    return { body, sword };
+    const fighter = { key, body, figure, sword };
+    this.pose(fighter, 'idle', POSE.idle);
+    return fighter;
+  }
+
+  /** Shows `frame` with the sword in his hand at `angle`. */
+  private pose(f: Swordsman, frame: Frame, angle: number): void {
+    const a = FRAMES[f.key][frame];
+    if (f.frame !== frame) {
+      setTintedFrame(f.figure, `${f.key}_${frame}`, a.feet);
+      f.sword.setPosition(a.hand.x - a.feet.x, a.hand.y - a.feet.y);
+      f.frame = frame;
+    }
+    f.sword.setAngle(angle);
   }
 
   private drawUi(): void {
@@ -183,6 +227,7 @@ export class SwordScene extends Phaser.Scene {
       withRng(this.state, (rng) => tickFight(this.fight, Math.min(20, left), rng));
     }
     this.slash = Math.max(0, this.slash - delta);
+    this.block = Math.max(0, this.block - delta);
     for (const e of this.fight.events.splice(0)) this.show(e);
     this.render();
   }
@@ -191,43 +236,48 @@ export class SwordScene extends Phaser.Scene {
   private render(): void {
     const f = this.fight;
     const h = f.hero;
-    let heroAngle = POSE.idle;
     let heroX = HERO_X;
-    if (h.phase === 'swing') heroAngle = Phaser.Math.Linear(POSE.raised, POSE.struck, 1 - h.timer / SWING_MS);
-    else if (h.phase === 'parry') {
-      heroAngle = POSE.parry;
+    if (this.finished && f.heroHp <= 0) this.pose(this.hero, 'down', POSE.dropped);
+    else if (h.phase === 'swing') {
+      const t = 1 - h.timer / SWING_MS;
+      this.pose(this.hero, t < WINDUP_SHARE ? 'windup' : 'strike', Phaser.Math.Linear(POSE.raised, POSE.struck, t));
+    } else if (h.phase === 'parry') {
+      this.pose(this.hero, 'parry', POSE.parry);
       heroX += 6;
-    } else if (h.phase === 'recover') heroAngle = POSE.struck - 30;
-    else if (h.phase === 'hit') heroX -= 10;
-    this.hero.sword.setAngle(heroAngle);
+    } else if (h.phase === 'recover') this.pose(this.hero, 'idle', POSE.struck - 30);
+    else if (h.phase === 'hit') {
+      this.pose(this.hero, 'hit', POSE.flung);
+      heroX -= 10;
+    } else this.pose(this.hero, 'idle', POSE.idle);
     this.hero.body.setX(heroX);
 
     const g = f.guard;
     let x = GUARD_X;
-    let angle = POSE.idle;
-    let lean = 0;
     let alpha = 1;
+    // The guard faces left, so his angles are mirrored by the container's scale.
     switch (g.phase) {
       case 'enter':
         x = Phaser.Math.Linear(ENTER_FROM_X, GUARD_X, 1 - g.timer / ENTER_MS);
+        this.pose(this.guard, 'idle', POSE.idle);
         break;
       case 'windup':
-        angle = Phaser.Math.Linear(POSE.idle, POSE.raised, Math.min(1, 1.6 * (1 - g.timer / windupMs(f.level))));
+        this.pose(this.guard, 'windup',
+          Phaser.Math.Linear(POSE.idle, POSE.raised, Math.min(1, 1.6 * (1 - g.timer / windupMs(f.level)))));
         break;
       case 'stagger':
         x += 18 * (g.timer / STAGGER_MS);
-        lean = -10;
-        angle = -20;
+        this.pose(this.guard, 'hit', POSE.flung);
         break;
       case 'down':
-        lean = -80;
         alpha = Math.max(0, g.timer / ENTER_MS);
+        this.pose(this.guard, 'down', POSE.dropped);
         break;
+      default:
+        if (this.slash > 0) this.pose(this.guard, 'strike', POSE.struck);
+        else if (this.block > 0) this.pose(this.guard, 'parry', POSE.parry);
+        else this.pose(this.guard, 'idle', POSE.idle);
     }
-    if (this.slash > 0) angle = POSE.struck;
-    // The guard faces left, so his angles are mirrored by the container's scale.
-    this.guard.sword.setAngle(angle);
-    this.guard.body.setPosition(x, FLOOR_Y).setAngle(-lean).setAlpha(alpha);
+    this.guard.body.setPosition(x, FLOOR_Y).setAlpha(alpha);
     this.warning.setVisible(g.phase === 'windup').setX(x);
 
     const n = f.guardHps.length;
@@ -259,6 +309,7 @@ export class SwordScene extends Phaser.Scene {
         break;
       case 'blocked':
         sfx(this, 'sword_clash', { volume: 0.5 });
+        this.block = BLOCK_MS;
         this.spark(clashX, FLOOR_Y - 120);
         this.say('Blocked! Wait for an opening.');
         break;

@@ -16,7 +16,7 @@ import { playerLord } from '../model/state';
 import { withRng } from '../model/turn';
 import type { GameState, Lord, LordId } from '../model/types';
 import { Button } from '../ui/Button';
-import { addBackdrop, addTinted } from '../ui/assets';
+import { addBackdrop, addTinted, setTintedFrame } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
 import { playMusic, sfx, sfxLoop } from '../ui/audio';
 
@@ -26,8 +26,13 @@ const VANISH = { x: 322, y: HORIZON };
 const IMPACT = { x: 240, y: 225 };
 const START_SCALE = 0.06;
 const IMPACT_SCALE = 1.3;
-/** Centre of the shield in the joust_knight sprite. */
-const KNIGHT_SHIELD = { x: 86, y: 62 };
+/** The knight's frames (`joust_knight_<frame>`) and the centre of his shield in each. */
+const KNIGHT_FRAMES = {
+  charge: { x: 86, y: 66 },
+  stride: { x: 84, y: 66 },
+  struck: { x: 100, y: 56 },
+};
+type KnightFrame = keyof typeof KNIGHT_FRAMES;
 /** The lance sprite's butt end and point, in its own pixels. */
 const LANCE_BUTT = { x: 37, y: 356 };
 const LANCE_POINT_Y = 2;
@@ -65,6 +70,7 @@ export class JoustScene extends Phaser.Scene {
   private lastPass: { mine: Strike; his: Strike } | null = null;
 
   private knight!: Phaser.GameObjects.Container;
+  private knightFrame: KnightFrame = 'charge';
   private lance!: Phaser.GameObjects.Image;
   private statusText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
@@ -116,7 +122,14 @@ export class JoustScene extends Phaser.Scene {
 
   /** The opponent seen head-on, in his colours; the container's origin is the centre of his shield. */
   private drawKnight(color: number): Phaser.GameObjects.Container {
-    return addTinted(this, VANISH.x, VANISH.y, 'joust_knight', color, KNIGHT_SHIELD);
+    this.knightFrame = 'charge';
+    return addTinted(this, VANISH.x, VANISH.y, 'joust_knight_charge', color, KNIGHT_FRAMES.charge);
+  }
+
+  private showKnight(frame: KnightFrame): void {
+    if (frame === this.knightFrame) return;
+    setTintedFrame(this.knight, `joust_knight_${frame}`, KNIGHT_FRAMES[frame]);
+    this.knightFrame = frame;
   }
 
   private drawUi(): void {
@@ -143,6 +156,7 @@ export class JoustScene extends Phaser.Scene {
 
   private resetPass(): void {
     this.elapsed = 0;
+    this.showKnight('charge');
     this.knight.setPosition(VANISH.x, VANISH.y).setScale(START_SCALE).setAngle(0).setAlpha(1);
     this.updateStatus();
     this.messageText.setText('Aim at the centre of his shield: move the mouse, drag, or use the arrow keys.\nClick, tap or press Space to ride!');
@@ -168,7 +182,10 @@ export class JoustScene extends Phaser.Scene {
     const scale = START_SCALE + (IMPACT_SCALE - START_SCALE) * Math.pow(z, 2.2);
     const f = (scale - START_SCALE) / (IMPACT_SCALE - START_SCALE);
     if (this.phase !== 'result') {
-      const gallop = Math.sin(this.elapsed * 0.018) * 6 * scale;
+      const stride = Math.sin(this.elapsed * 0.018);
+      const gallop = stride * 6 * scale;
+      // The hooves alternate with the bob of the gallop.
+      if (this.phase === 'charging') this.showKnight(stride > 0 ? 'stride' : 'charge');
       this.knight
         .setScale(scale)
         .setPosition(VANISH.x + (IMPACT.x - VANISH.x) * f, VANISH.y + (IMPACT.y - VANISH.y) * f + gallop);
@@ -219,6 +236,7 @@ export class JoustScene extends Phaser.Scene {
 
     this.cameras.main.shake(his === 'unhorse' ? 400 : 150, his === 'unhorse' ? 0.02 : 0.006);
     if (his === 'unhorse') this.cameras.main.flash(250, 160, 30, 30);
+    if (mine !== 'miss') this.showKnight('struck');
     if (mine === 'unhorse') {
       this.tweens.add({ targets: this.knight, angle: -75, y: this.knight.y + 80, alpha: 0, duration: 700 });
     } else {
