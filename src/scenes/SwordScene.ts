@@ -39,6 +39,8 @@ interface Anchor {
   feet: { x: number; y: number };
   /** His sword hand. */
   hand: { x: number; y: number };
+  /** Drawn mirrored: Gemini painted the fallen pose lying the other way round from the hit pose he falls from. */
+  mirrored?: boolean;
 }
 /** Where each frame stands and holds the sword, in the frame's own pixels. */
 const FRAMES: Record<Fighter, Record<Frame, Anchor>> = {
@@ -48,7 +50,7 @@ const FRAMES: Record<Fighter, Record<Frame, Anchor>> = {
     strike: { feet: { x: 60, y: 138 }, hand: { x: 128, y: 32 } },
     parry: { feet: { x: 31, y: 143 }, hand: { x: 45, y: 15 } },
     hit: { feet: { x: 41, y: 133 }, hand: { x: 6, y: 36 } },
-    down: { feet: { x: 67, y: 36 }, hand: { x: 82, y: 31 } },
+    down: { feet: { x: 67, y: 36 }, hand: { x: 82, y: 31 }, mirrored: true },
   },
   swordsman_guard: {
     idle: { feet: { x: 37, y: 150 }, hand: { x: 85, y: 48 } },
@@ -56,7 +58,7 @@ const FRAMES: Record<Fighter, Record<Frame, Anchor>> = {
     strike: { feet: { x: 59, y: 138 }, hand: { x: 126, y: 33 } },
     parry: { feet: { x: 32, y: 143 }, hand: { x: 45, y: 17 } },
     hit: { feet: { x: 40, y: 131 }, hand: { x: 4, y: 37 } },
-    down: { feet: { x: 66, y: 35 }, hand: { x: 76, y: 30 } },
+    down: { feet: { x: 66, y: 35 }, hand: { x: 76, y: 30 }, mirrored: true },
   },
 };
 /** The grip in the sword sprite, as a fraction of its height. */
@@ -172,12 +174,14 @@ export class SwordScene extends Phaser.Scene {
   /** Shows `frame` with the sword in his hand at `angle`. */
   private pose(f: Swordsman, frame: Frame, angle: number): void {
     const a = FRAMES[f.key][frame];
+    const flip = a.mirrored ? -1 : 1;
     if (f.frame !== frame) {
       setTintedFrame(f.figure, `${f.key}_${frame}`, a.feet);
-      f.sword.setPosition(a.hand.x - a.feet.x, a.hand.y - a.feet.y);
+      f.figure.setScale(flip, 1);
+      f.sword.setPosition(flip * (a.hand.x - a.feet.x), a.hand.y - a.feet.y);
       f.frame = frame;
     }
-    f.sword.setAngle(angle);
+    f.sword.setAngle(flip * angle);
   }
 
   private drawUi(): void {
