@@ -69,13 +69,13 @@ def draw_lance(canvas: Image.Image, tip_x: float, tip_y: float) -> None:
     canvas.paste(rotated, (round(LANCE_BASE[0] - rw / 2), round(LANCE_BASE[1] - rh / 2)), rotated)
 
 def render_scene_frame(knight_key: str, knight_pos: tuple[float, float], scale: float,
-                       lord_color: tuple[int, int, int], angle: float = 0.0, alpha: float = 1.0) -> Image.Image:
+                       lord_color: tuple[int, int, int], angle: float = 0.0, alpha: float = 1.0, anchor: str = "shield") -> Image.Image:
     frame = joust_bg.copy()
     draw_tilt_barrier(frame)
 
     # Knight sprite
     entry = manifest[knight_key]
-    shield_pt = entry["points"]["shield"]
+    anchor_pt = entry["points"][anchor]
     knight_im = get_tinted(knight_key, lord_color)
     kw, kh = knight_im.size
     new_w = max(1, round(kw * scale))
@@ -91,8 +91,8 @@ def render_scene_frame(knight_key: str, knight_pos: tuple[float, float], scale: 
             scaled_knight = scaled_knight.rotate(-angle, expand=True, resample=Image.Resampling.BILINEAR)
 
     # Position centered on shield point
-    sh_x = round(shield_pt[0] * scale)
-    sh_y = round(shield_pt[1] * scale)
+    sh_x = round(anchor_pt[0] * scale)
+    sh_y = round(anchor_pt[1] * scale)
     kx = round(knight_pos[0] - sh_x)
     ky = round(knight_pos[1] - sh_y)
     frame.paste(scaled_knight, (kx, ky), scaled_knight)
@@ -119,19 +119,22 @@ for step in range(num_charge_frames):
     frames.append(im)
     durations.append(90)
 
-# Sequence 2: Impact & Unhorsed (3 struck frames with fall tween)
+# Sequence 2: Impact & Unhorsed (3 struck frames anchored on horse)
+ch0 = manifest["joust_knight_charge_0"]["points"]
+hx = IMPACT[0] - (ch0["shield"][0] - ch0["horse"][0]) * IMPACT_SCALE
+hy = IMPACT[1] - (ch0["shield"][1] - ch0["horse"][1]) * IMPACT_SCALE
+
 struck_steps = [
     ("joust_knight_struck_0", 0.0, 1.0, 0),
-    ("joust_knight_struck_0", -5.0, 1.0, 10),
-    ("joust_knight_struck_1", -15.0, 0.95, 25),
-    ("joust_knight_struck_1", -25.0, 0.90, 45),
-    ("joust_knight_struck_2", -38.0, 0.85, 65),
-    ("joust_knight_struck_2", -48.0, 0.65, 85),
-    ("joust_knight_struck_2", -58.0, 0.35, 105),
+    ("joust_knight_struck_0", 0.0, 1.0, 10),
+    ("joust_knight_struck_1", 0.0, 0.95, 20),
+    ("joust_knight_struck_1", 0.0, 0.90, 30),
+    ("joust_knight_struck_2", 0.0, 0.85, 45),
+    ("joust_knight_struck_2", 0.0, 0.65, 60),
+    ("joust_knight_struck_2", 0.0, 0.35, 80),
 ]
 for key, ang, alp, dy in struck_steps:
-    kx, ky = IMPACT[0], IMPACT[1] + dy
-    im = render_scene_frame(key, (kx, ky), IMPACT_SCALE, RED_LORD, angle=ang, alpha=alp)
+    im = render_scene_frame(key, (hx, hy + dy), IMPACT_SCALE, RED_LORD, angle=ang, alpha=alp, anchor="horse")
     frames.append(im)
     durations.append(130)
 

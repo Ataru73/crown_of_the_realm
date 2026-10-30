@@ -124,9 +124,9 @@ export class JoustScene extends Phaser.Scene {
     return addTinted(this, VANISH.x, VANISH.y, 'joust_knight_charge_0', color, assetPoint('joust_knight_charge_0', 'shield'));
   }
 
-  private showKnight(key: string): void {
+  private showKnight(key: string, anchor = 'shield'): void {
     if (key === this.currentKnightKey) return;
-    setTintedFrame(this.knight, key, assetPoint(key, 'shield'));
+    setTintedFrame(this.knight, key, assetPoint(key, anchor));
     this.currentKnightKey = key;
   }
 
@@ -235,14 +235,19 @@ export class JoustScene extends Phaser.Scene {
     this.cameras.main.shake(his === 'unhorse' ? 400 : 150, his === 'unhorse' ? 0.02 : 0.006);
     if (his === 'unhorse') this.cameras.main.flash(250, 160, 30, 30);
     if (mine === 'unhorse') {
-      this.showKnight('joust_knight_struck_0');
+      const ch0Shield = assetPoint('joust_knight_charge_0', 'shield');
+      const ch0Horse = assetPoint('joust_knight_charge_0', 'horse');
+      const horseX = this.knight.x - (ch0Shield.x - ch0Horse.x) * IMPACT_SCALE;
+      const horseY = this.knight.y - (ch0Shield.y - ch0Horse.y) * IMPACT_SCALE;
+      this.knight.setPosition(horseX, horseY);
+      this.showKnight('joust_knight_struck_0', 'horse');
       this.time.delayedCall(160, () => {
-        if (this.phase === 'result') this.showKnight('joust_knight_struck_1');
+        if (this.phase === 'result') this.showKnight('joust_knight_struck_1', 'horse');
       });
       this.time.delayedCall(360, () => {
-        if (this.phase === 'result') this.showKnight('joust_knight_struck_2');
+        if (this.phase === 'result') this.showKnight('joust_knight_struck_2', 'horse');
       });
-      this.tweens.add({ targets: this.knight, angle: -45, y: this.knight.y + 80, alpha: 0, duration: 700 });
+      this.tweens.add({ targets: this.knight, y: horseY + 40, alpha: 0, duration: 750 });
     } else if (mine === 'glance') {
       this.showKnight('joust_knight_struck_0');
       this.tweens.add({ targets: this.knight, x: this.knight.x - 260, scale: IMPACT_SCALE * 1.4, alpha: 0, duration: 450 });

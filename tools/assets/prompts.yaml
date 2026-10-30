@@ -227,14 +227,14 @@ assets:
   - id: joust_knight_charge
     kind: render
     frames: 4
-    scale: 1.42
+    scale: 1.37
     alpha_cutoff: 50
     tint: true
 
   - id: joust_knight_struck
     kind: render
     frames: 3
-    scale: 1.42
+    scale: 1.37
     alpha_cutoff: 50
     tint: true
 
