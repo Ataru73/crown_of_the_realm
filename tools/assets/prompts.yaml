@@ -222,31 +222,21 @@ assets:
       Head-and-shoulders portrait of a broad-shouldered Norman lord, shaven head, scarred cheek, chain mail and a black surcoat with a gold trim, dark neutral background.
 
   # --- Sprites ---------------------------------------------------------------
-  - id: joust_knight
-    kind: sheet
-    frames: [charge, stride, struck]
-    height: 240
+  # The joust knight is rendered in Blender by tools/assets/blender/joust.py, not
+  # painted by Gemini: charge (4 frames) and struck (3 frames).
+  - id: joust_knight_charge
+    kind: render
+    frames: 4
+    scale: 1.42
+    alpha_cutoff: 50
     tint: true
-    aspect: landscape 16:9
-    # Sent on its own (no style or sheet_style), with the earlier single
-    # joust_knight sprite attached: without it Gemini raises the lances.
-    reference: the earlier single-pose joust_knight
-    prompt: >-
-      Redraw the attached knight as a sprite sheet of three poses, keeping him exactly
-      as he is: the same grey great helm and armour, the same brown horse, the
-      caparison and the heater shield both in flat bright pure green (#00FF00), seen
-      exactly head-on, charging straight at the viewer. In every pose his lance is
-      couched under his arm and points straight at the viewer, foreshortened, never
-      raised. Style: painted 16-bit Amiga-era computer game art like late-1980s
-      adventure games, rich oil-painting colors, visible dithering and a limited
-      palette, crisp pixel edges. The three poses stand side by side in one row with
-      wide empty gaps between them so that none of them touch, all at the same scale,
-      on a perfectly flat solid magenta (#FF00FF) background with no shadow, no ground
-      and no scenery. From left to right: (1) galloping, both forelegs together,
-      exactly like the attached image; (2) the next stride of the gallop, the horse's
-      right foreleg lifted high and its left foreleg on the ground, head slightly
-      lowered; (3) struck hard on the shield, the knight thrown back in the saddle, his
-      lance knocked aside, the horse's head tossed up.
+
+  - id: joust_knight_struck
+    kind: render
+    frames: 3
+    scale: 1.42
+    alpha_cutoff: 50
+    tint: true
 
   - id: lance
     kind: sprite

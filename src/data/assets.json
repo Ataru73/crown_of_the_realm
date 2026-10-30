@@ -147,28 +147,158 @@
     ]
   },
   {
-    "id": "joust_knight_charge",
+    "id": "joust_knight_charge_0",
     "tint": true,
     "size": [
-      119,
+      89,
       240
-    ]
+    ],
+    "points": {
+      "shield": [
+        61,
+        86
+      ],
+      "shield_r": [
+        82,
+        87
+      ],
+      "lance_tip": [
+        11,
+        153
+      ]
+    }
   },
   {
-    "id": "joust_knight_stride",
+    "id": "joust_knight_charge_1",
     "tint": true,
     "size": [
-      119,
-      244
-    ]
+      89,
+      240
+    ],
+    "points": {
+      "shield": [
+        65,
+        68
+      ],
+      "shield_r": [
+        85,
+        69
+      ],
+      "lance_tip": [
+        27,
+        111
+      ]
+    }
   },
   {
-    "id": "joust_knight_struck",
+    "id": "joust_knight_charge_2",
     "tint": true,
     "size": [
-      140,
-      241
-    ]
+      89,
+      240
+    ],
+    "points": {
+      "shield": [
+        66,
+        82
+      ],
+      "shield_r": [
+        87,
+        83
+      ],
+      "lance_tip": [
+        22,
+        145
+      ]
+    }
+  },
+  {
+    "id": "joust_knight_charge_3",
+    "tint": true,
+    "size": [
+      89,
+      240
+    ],
+    "points": {
+      "shield": [
+        63,
+        68
+      ],
+      "shield_r": [
+        83,
+        69
+      ],
+      "lance_tip": [
+        20,
+        112
+      ]
+    }
+  },
+  {
+    "id": "joust_knight_struck_0",
+    "tint": true,
+    "size": [
+      225,
+      324
+    ],
+    "points": {
+      "shield": [
+        174,
+        159
+      ],
+      "shield_r": [
+        193,
+        154
+      ],
+      "lance_tip": [
+        203,
+        71
+      ]
+    }
+  },
+  {
+    "id": "joust_knight_struck_1",
+    "tint": true,
+    "size": [
+      225,
+      324
+    ],
+    "points": {
+      "shield": [
+        163,
+        158
+      ],
+      "shield_r": [
+        172,
+        153
+      ],
+      "lance_tip": [
+        130,
+        -7
+      ]
+    }
+  },
+  {
+    "id": "joust_knight_struck_2",
+    "tint": true,
+    "size": [
+      225,
+      324
+    ],
+    "points": {
+      "shield": [
+        165,
+        192
+      ],
+      "shield_r": [
+        157,
+        205
+      ],
+      "lance_tip": [
+        -32,
+        347
+      ]
+    }
   },
   {
     "id": "lance",

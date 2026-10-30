@@ -97,18 +97,18 @@ loops with a crossfaded seam, stings trimmed) into `public/assets/music/`.
    The venv has Pillow, PyYAML and numpy (create it with
    `python3 -m venv --without-pip tools/assets/.venv` and
    `pip3 --python tools/assets/.venv/bin/python install pillow pyyaml numpy`).
-4. Anchor points in the art are constants in the scenes, one per frame: the joust
-   knight's shield (`KNIGHT_FRAMES`), the lance butt. Re-measure
-   them after regenerating a sheet (a contact sheet with a 10 px grid helps).
-5. **Blender renders** (`kind: render`): the battle foot soldier, knight and swordsmen are rigged models built
-   by `tools/assets/blender/soldier.py`, `knight.py` and `swordsman.py`, which pose each animation in `ANIMS`
+4. Anchor points in the art are constants in the scenes, one per frame: the
+   lance butt. Re-measure them after regenerating a sheet (a contact sheet with a 10 px grid helps).
+5. **Blender renders** (`kind: render`): the battle foot soldier, knight, swordsmen and joust knight are rigged models built
+   by `tools/assets/blender/soldier.py`, `knight.py`, `swordsman.py` and `joust.py`, which pose each animation in `ANIMS`
    (soldier: stand, walk, thrust; knight: rest, gallop, attack; swordsman hero & guard: idle, step,
-   windup, strike, parry, hit, fall) and render them from a fixed
-   orthographic camera into `raw-assets/<unit>_<anim>/`, with `anchors.json` (feet, hand, and tip for swordsmen) per frame. Run them in
+   windup, strike, parry, hit, fall; joust opponent: charge, struck) and render them
+   (orthographic side view for army/swordsmen, perspective head-on looking down lists for joust)
+   into `raw-assets/<unit>_<anim>/`, with `anchors.json` (feet, hand, tip, shield, shield_r, lance_tip) per frame. Run them in
    Blender through the Blender MCP (Blender runs on Windows and writes to the repo via
    `\\wsl.localhost\Ubuntu-24.04\...`), then `process.py`. Every frame of an animation is shrunk by the same `scale` and cropped
    to one box, and the anchors go into the manifest as `points` (`assetPoint` in
-   `ui/assets.ts`), so nothing is measured by hand. The tunic/caparison is lit green
+   `ui/assets.ts`), so nothing is measured by hand. The tunic/caparison/shield is lit green
    (0, 165, 0), dark enough that its shading survives into the tint layer.
 
 ## Conventions
@@ -149,7 +149,7 @@ static assets on Cloudflare Workers.
 | M7 Gemini asset pass | ✅ |
 | M8 Cutscenes, Lyria music, SFX, balancing | ✅ |
 | M9 Polish, controls, deploy | ✅ |
-| M10 3D rendered animated sprites (B1 army, B2 swordsmen, B3 joust, B4 siege) | In progress (B1, B2 ✅) |
+| M10 3D rendered animated sprites (B1 army, B2 swordsmen, B3 joust, B4 siege) | In progress (B1, B2, B3 ✅) |
 
 There are 124 tests, all passing.
 
@@ -162,13 +162,14 @@ There are 124 tests, all passing.
   `src/data/music.json`. When regenerating: Lyria makes one ~3-minute take per chat
   and often fails in a long chat, so start a new chat per track; the take is a
   `<video>` (mp4) whose src can be fetched and relayed as audio/mp4.
-- Animation is key poses, not cycles: the joust knight has 3 poses (charge, stride, struck).
-  Swordsmen, battle soldiers and knights are Blender renders with real cycles and animations:
-  soldier has stand, an 8-frame walk paced to the ground covered (`WALK_CYCLE_PX`), and a 3-frame thrust;
-  knight has rest, a 6-frame gallop cycle paced to the ground covered (`GALLOP_CYCLE_PX`), and a 3-frame attack;
-  swordsman hero and guard have idle breathing bob (2 frames), step footwork (4 frames), windup (2 frames),
-  strike (2 frames), parry (2 frames), hit (2 frames) and fall (4 frames) with integrated sword, shield,
-  and anchors (feet, hand, tip). The catapult arm and the siege wall are drawn in code.
+- Animation is key poses, not cycles: the catapult arm and the siege wall are drawn in code.
+  Joust opponent, swordsmen, battle soldiers and knights are Blender renders with real cycles and animations:
+  joust opponent has a 4-frame gallop cycle and 3-frame struck/unhorsing sequence with shield, shield_r
+  and lance_tip anchors; soldier has stand, an 8-frame walk paced to the ground covered (`WALK_CYCLE_PX`),
+  and a 3-frame thrust; knight has rest, a 6-frame gallop cycle paced to the ground covered (`GALLOP_CYCLE_PX`),
+  and a 3-frame attack; swordsman hero and guard have idle breathing bob (2 frames), step footwork (4 frames),
+  windup (2 frames), strike (2 frames), parry (2 frames), hit (2 frames) and fall (4 frames) with integrated
+  sword, shield, and anchors (feet, hand, tip).
 - Quitting to the title from a minigame and pressing Continue replays the month
   from its autosave, so a lost joust or fight can be retried.
 - The siege was tested in the browser by driving the scene from JS; the Attack
