@@ -95,9 +95,10 @@ def setup_materials_and_lighting() -> None:
     mat_s = rig.material("steel")
     bsdf_s = next(n for n in mat_s.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
     bsdf_s.inputs["Base Color"].default_value = (0.55, 0.60, 0.68, 1.0)
-    bsdf_s.inputs["Metallic"].default_value = 0.75
-    bsdf_s.inputs["Roughness"].default_value = 0.18
-    bsdf_s.inputs["Specular IOR Level"].default_value = 1.0
+    # Rough enough that the Norman cone helmet doesn't blow out to white
+    bsdf_s.inputs["Metallic"].default_value = 0.6
+    bsdf_s.inputs["Roughness"].default_value = 0.38
+    bsdf_s.inputs["Specular IOR Level"].default_value = 0.6
 
     # 3. Tint fabric with weave bump
     mat_t = rig.material("tint")
@@ -222,6 +223,9 @@ def build_head(r: bpy.types.Object, is_norman: bool = False) -> None:
     else:
         # Norman helmet: conical steel helmet with nasal bar
         rig.cone(r, "head", (0.01, 0.01, 1.78), 0.16, 0.32, "steel", top=0.02, scale=(1.05, 0.98))
+        # Smooth the facets so the sun doesn't flash one of them white
+        for p in bpy.context.object.data.polygons:
+            p.use_smooth = True
         add_outline(bpy.context.object)
         rig.limb(r, "head", (0.01, 0.01, 1.64), (0.01, 0.01, 1.67), 0.164, "steel", verts=20, scale=(1.06, 0.98))
         rig.box(r, "head", (0.17, -0.08, 1.62), (0.035, 0.035, 0.14), "steel")
@@ -274,10 +278,11 @@ def build_torso(r: bpy.types.Object, is_norman: bool = False) -> None:
     rig.attach(skirt_ob, r, "root", "tint")
     add_outline(skirt_ob)
 
-    # Scabbard
-    rig.limb(r, "root", (-0.05, -0.22, 0.96), (-0.18, -0.22, 0.32), 0.04, "leather", verts=8, scale=(1.0, 0.35))
-    rig.box(r, "root", (-0.05, -0.22, 0.95), (0.05, 0.05, 0.04), "gold")
-    rig.cone(r, "root", (-0.19, -0.22, 0.30), 0.04, 0.06, "gold", scale=(1.0, 0.35))
+    # Scabbard on the far (left) hip, hanging back behind the far leg so it doesn't
+    # read as a third leg between the feet
+    rig.limb(r, "root", (-0.08, 0.24, 0.96), (-0.40, 0.24, 0.42), 0.04, "leather", verts=8, scale=(1.0, 0.35))
+    rig.box(r, "root", (-0.08, 0.24, 0.95), (0.05, 0.05, 0.04), "gold")
+    rig.ball(r, "root", (-0.41, 0.24, 0.40), 0.035, "gold", scale=(1.0, 0.5, 1.0))
 
 
 def build_limbs(r: bpy.types.Object) -> None:
@@ -477,11 +482,11 @@ def pose(
     rig.swing(r, "thigh.F", thigh_f)
     rig.swing(r, "shin.F", shin_f - thigh_f)
     # Near arm (sword arm):
-    rig.swing(r, "upperarm.N", upperarm_n + spine)
+    rig.swing(r, "upperarm.N", upperarm_n - spine)
     rig.swing(r, "forearm.N", forearm_n - upperarm_n)
     rig.swing(r, "sword", sword - forearm_n)
     # Far arm (shield arm):
-    rig.swing(r, "upperarm.F", upperarm_f + spine)
+    rig.swing(r, "upperarm.F", upperarm_f - spine)
     rig.swing(r, "forearm.F", forearm_f - upperarm_f)
     if "shield" in r.pose.bones:
         rig.swing(r, "shield", shield - forearm_f)
@@ -574,32 +579,34 @@ def step_pose(r: bpy.types.Object, i: int) -> None:
 def windup_pose(r: bpy.types.Object, i: int) -> None:
     """2 frames: coiling back, raising blade high for a heavy cut."""
     if i == 0:
+        # Sword arm rising, blade lifting past the head
         pose(
             r,
-            spine=-8.0,
-            head=5.0,
-            thigh_n=-6.0,
+            spine=-6.0,
+            head=4.0,
+            thigh_n=-4.0,
             shin_n=4.0,
             thigh_f=-12.0,
             shin_f=-8.0,
-            upperarm_n=-20.0,
-            forearm_n=15.0,
-            sword=25.0,
+            upperarm_n=90.0,
+            forearm_n=60.0,
+            sword=60.0,
             shield=5.0,
         )
     else:
-        # Cocked far back, blade held high ready to strike
+        # Cocked: elbow above the shoulder, blade laid back over the head
         pose(
             r,
-            spine=-16.0,
+            spine=-12.0,
             head=8.0,
-            thigh_n=-12.0,
+            thigh_n=-10.0,
             shin_n=8.0,
             thigh_f=-18.0,
             shin_f=-14.0,
-            upperarm_n=-35.0,
-            forearm_n=28.0,
-            sword=50.0,
+            upperarm_n=150.0,
+            forearm_n=100.0,
+            sword=100.0,
+            upperarm_f=10.0,
             shield=10.0,
         )
 
@@ -607,39 +614,41 @@ def windup_pose(r: bpy.types.Object, i: int) -> None:
 def strike_pose(r: bpy.types.Object, i: int) -> None:
     """2 frames: lunging forward with a slashing blow."""
     if i == 0:
-        # Forward lunge, blade slashing diagonally forward-down
+        # Stepping in, blade coming down from high in front
         pose(
             r,
-            spine=14.0,
-            head=-5.0,
-            thigh_n=24.0,
-            shin_n=12.0,
-            thigh_f=-24.0,
+            spine=10.0,
+            head=-4.0,
+            thigh_n=20.0,
+            shin_n=10.0,
+            thigh_f=-22.0,
             shin_f=-14.0,
-            upperarm_n=30.0,
+            upperarm_n=140.0,
             forearm_n=20.0,
-            sword=-60.0,
+            sword=-30.0,
+            upperarm_f=-10.0,
             shield=-5.0,
         )
     else:
-        # Full extension: blade pointing straight forward at enemy's chest
+        # Full lunge: arm straight, blade level at the enemy's chest
         pose(
             r,
-            spine=20.0,
-            head=-6.0,
+            spine=18.0,
+            head=-8.0,
             thigh_n=32.0,
             shin_n=16.0,
             thigh_f=-32.0,
             shin_f=-18.0,
-            upperarm_n=45.0,
-            forearm_n=25.0,
-            sword=-75.0,
+            upperarm_n=95.0,
+            forearm_n=-10.0,
+            sword=-50.0,
+            upperarm_f=-20.0,
             shield=-10.0,
         )
 
 
 def parry_pose(r: bpy.types.Object, i: int) -> None:
-    """2 frames: defensive parry holding shield and blade defensively."""
+    """2 frames: shield thrust up and forward, blade raised upright to catch the blow."""
     if i == 0:
         pose(
             r,
@@ -649,12 +658,12 @@ def parry_pose(r: bpy.types.Object, i: int) -> None:
             shin_n=-2.0,
             thigh_f=-6.0,
             shin_f=-4.0,
-            upperarm_n=12.0,
-            forearm_n=18.0,
-            sword=20.0,
-            upperarm_f=15.0,
-            forearm_f=12.0,
-            shield=25.0,
+            upperarm_n=40.0,
+            forearm_n=60.0,
+            sword=35.0,
+            upperarm_f=35.0,
+            forearm_f=25.0,
+            shield=20.0,
         )
     else:
         pose(
@@ -665,12 +674,12 @@ def parry_pose(r: bpy.types.Object, i: int) -> None:
             shin_n=-4.0,
             thigh_f=-10.0,
             shin_f=-6.0,
-            upperarm_n=18.0,
-            forearm_n=24.0,
-            sword=30.0,
-            upperarm_f=22.0,
-            forearm_f=18.0,
-            shield=35.0,
+            upperarm_n=60.0,
+            forearm_n=90.0,
+            sword=50.0,
+            upperarm_f=55.0,
+            forearm_f=40.0,
+            shield=30.0,
         )
 
 
@@ -710,6 +719,19 @@ def hit_pose(r: bpy.types.Object, i: int) -> None:
         )
 
 
+def lie(r: bpy.types.Object, swings: dict, shield_flat: float, target_z: float) -> None:
+    """Poses a falling body by relative swings, optionally laying the shield face down."""
+    r.pose.bones["root"].location = (0, 0, 0)
+    for bone in ("root", "spine", "head", "thigh.N", "shin.N", "thigh.F", "shin.F",
+                 "upperarm.N", "forearm.N", "sword", "upperarm.F", "forearm.F", "shield"):
+        rig.swing(r, bone, swings.get(bone, 0.0))
+    if shield_flat:
+        # Tip the shield about its own X axis so it lies on the floor instead of through it.
+        pb = r.pose.bones["shield"]
+        pb.rotation_quaternion = pb.rotation_quaternion @ Matrix.Rotation(math.radians(shield_flat), 3, "X").to_quaternion()
+    ground_fall(r, target_z=target_z)
+
+
 def fall_pose(r: bpy.types.Object, i: int) -> None:
     """4 frames: collapsing backwards onto the floor, ending flat on back."""
     r.pose.bones["root"].location = (0, 0, 0)
@@ -730,50 +752,17 @@ def fall_pose(r: bpy.types.Object, i: int) -> None:
             shield=-10.0,
         )
     elif i == 1:
-        # Halfway down
-        rig.swing(r, "root", -45)
-        rig.swing(r, "spine", -15)
-        rig.swing(r, "head", 10)
-        rig.swing(r, "thigh.N", 15)
-        rig.swing(r, "shin.N", -30)
-        rig.swing(r, "thigh.F", 5)
-        rig.swing(r, "shin.F", -25)
-        rig.swing(r, "upperarm.N", -30)
-        rig.swing(r, "forearm.N", 10)
-        rig.swing(r, "sword", 10)
-        rig.swing(r, "upperarm.F", -25)
-        rig.swing(r, "forearm.F", 15)
-        ground_fall(r, target_z=0.10)
+        # Toppling backwards, sword arm flung up
+        lie(r, {"root": 40, "spine": -10, "head": 10, "thigh.N": -25, "shin.N": 35, "thigh.F": -10, "shin.F": 30,
+                "upperarm.N": -40, "forearm.N": 20, "sword": 20, "upperarm.F": -30, "forearm.F": 20}, 0, 0.10)
     elif i == 2:
-        # Hitting the floor
-        rig.swing(r, "root", -80)
-        rig.swing(r, "spine", -8)
-        rig.swing(r, "head", 4)
-        rig.swing(r, "thigh.N", -10)
-        rig.swing(r, "shin.N", 15)
-        rig.swing(r, "thigh.F", 10)
-        rig.swing(r, "shin.F", -15)
-        rig.swing(r, "upperarm.N", -35)
-        rig.swing(r, "forearm.N", 15)
-        rig.swing(r, "sword", 45)
-        rig.swing(r, "upperarm.F", 15)
-        rig.swing(r, "forearm.F", 5)
-        ground_fall(r, target_z=0.14)
+        # Hitting the floor, the shield slipping off the arm
+        lie(r, {"root": 78, "spine": -6, "head": 6, "thigh.N": -20, "shin.N": 25, "thigh.F": -5, "shin.F": 15,
+                "upperarm.N": -40, "forearm.N": 30, "sword": 70, "upperarm.F": -60, "forearm.F": 20}, 60, 0.13)
     else:
-        # 3: Flat on back on the floor, motionless
-        rig.swing(r, "root", -90)
-        rig.swing(r, "spine", 0)
-        rig.swing(r, "head", 0)
-        rig.swing(r, "thigh.N", -15)
-        rig.swing(r, "shin.N", 10)
-        rig.swing(r, "thigh.F", 10)
-        rig.swing(r, "shin.F", -10)
-        rig.swing(r, "upperarm.N", -40)
-        rig.swing(r, "forearm.N", 20)
-        rig.swing(r, "sword", 55)
-        rig.swing(r, "upperarm.F", 20)
-        rig.swing(r, "forearm.F", 10)
-        ground_fall(r, target_z=0.14)
+        # 3: Flat on back, sword lying on the floor past the head
+        lie(r, {"root": 90, "head": 0, "thigh.N": -12, "shin.N": 14, "shin.F": 6,
+                "upperarm.N": -50, "forearm.N": 40, "sword": 74, "upperarm.F": -80, "forearm.F": 10}, 80, 0.13)
 
 
 def swordsman_anchors(r: bpy.types.Object, i: int) -> dict:
