@@ -19,6 +19,13 @@ import bmesh
 from mathutils import Vector, Matrix, Euler
 import rig
 
+# Colours the swordsmen add to rig.COLOURS (sRGB).
+rig.COLOURS.update({
+    "eye": (222, 214, 196),
+    "pupil": (30, 22, 20),
+    "linen": (168, 150, 112),
+})
+
 # Render resolution & scale:
 # Target sprite height: ~150 px.
 # At px_per_m = 162, a 1.85m human is 300 px tall raw; scale 2.0 produces exactly 150 px.
@@ -133,314 +140,403 @@ def add_dramatic_lighting() -> None:
     torch_light.location = (0.6, -1.8, 0.8)
 
 
-def create_muscle_limb(rig_ob, bone_name, a, b, r_profile, mat_name, scale=(1.0, 1.0), outline=True):
-    a, b = Vector(a), Vector(b)
-    d = b - a
-    length = d.length
+# --- Mesh helpers ---
+# Everything is smooth-shaded and higher-poly than rig's primitives, so the renders
+# shade like painted forms rather than facets.
 
-    bm = bmesh.new()
-    segments = 16
-    rings = len(r_profile)
+# The torso and hips are turned this far toward the camera (matching the shoulder
+# and hip joints in BONES), the head a little further.
+BODY_YAW = math.radians(-24)
+HEAD_YAW = math.radians(-30)
+HEAD = Vector((0.0, 0.0, 1.62))
 
-    verts_per_ring = []
-    for t, r in r_profile:
-        z = -length / 2 + t * length
-        ring_verts = []
-        for i in range(segments):
-            angle = 2 * math.pi * i / segments
-            x = r * math.cos(angle) * scale[0]
-            y = r * math.sin(angle) * scale[1]
-            ring_verts.append(bm.verts.new((x, y, z)))
-        verts_per_ring.append(ring_verts)
 
-    for r_idx in range(rings - 1):
-        for i in range(segments):
-            next_i = (i + 1) % segments
-            v1 = verts_per_ring[r_idx][i]
-            v2 = verts_per_ring[r_idx][next_i]
-            v3 = verts_per_ring[r_idx + 1][next_i]
-            v4 = verts_per_ring[r_idx + 1][i]
-            bm.faces.new((v1, v2, v3, v4))
-
-    bm.faces.new(verts_per_ring[0])
-    bm.faces.new(list(reversed(verts_per_ring[-1])))
-
-    mesh = bpy.data.meshes.new(f"mesh_{bone_name}")
+def mesh_object(r, bone, bm, mat, at=(0, 0, 0), rot=(0, 0, 0), outline=True, thickness=-0.007):
+    """Turns a bmesh into a smooth-shaded object attached to a bone."""
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    mesh = bpy.data.meshes.new(f"mesh_{bone}")
     bm.to_mesh(mesh)
     bm.free()
-
-    ob = bpy.data.objects.new(f"ob_{bone_name}", mesh)
+    ob = bpy.data.objects.new(f"ob_{bone}", mesh)
     bpy.context.collection.objects.link(ob)
-
-    ob.location = (a + b) / 2
-    ob.rotation_euler = d.to_track_quat("Z", "Y").to_euler()
-
+    ob.location = at
+    ob.rotation_euler = rot
     for p in ob.data.polygons:
         p.use_smooth = True
-
-    rig.attach(ob, rig_ob, bone_name, mat_name)
+    rig.attach(ob, r, bone, mat)
     if outline:
-        add_outline(ob)
+        add_outline(ob, thickness)
     return ob
 
 
+def lathe(r, bone, a, b, profile, mat, segs=20, scale=(1.0, 1.0), yaw=0.0, outline=True):
+    """A surface of revolution from a to b; profile is [(t along a→b, radius)].
+    scale squashes the rings into ellipses, turned by yaw about the axis."""
+    a, b = Vector(a), Vector(b)
+    d = b - a
+    bm = bmesh.new()
+    rings = []
+    for t, rad in profile:
+        z = (t - 0.5) * d.length
+        ring = []
+        for i in range(segs):
+            ang = 2 * math.pi * i / segs
+            x, y = rad * math.cos(ang) * scale[0], rad * math.sin(ang) * scale[1]
+            ring.append(bm.verts.new((x * math.cos(yaw) - y * math.sin(yaw), x * math.sin(yaw) + y * math.cos(yaw), z)))
+        rings.append(ring)
+    for k in range(len(rings) - 1):
+        for i in range(segs):
+            j = (i + 1) % segs
+            bm.faces.new((rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i]))
+    bm.faces.new(rings[0])
+    bm.faces.new(list(reversed(rings[-1])))
+    return mesh_object(r, bone, bm, mat, (a + b) / 2, d.to_track_quat("Z", "Y").to_euler(), outline)
+
+
+def blob(r, bone, at, radii, mat, rot=(0, 0, 0), outline=False, segs=24, rings=12):
+    """A smooth ellipsoid."""
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=segs, v_segments=rings, radius=1.0)
+    for v in bm.verts:
+        v.co = Vector((v.co.x * radii[0], v.co.y * radii[1], v.co.z * radii[2]))
+    return mesh_object(r, bone, bm, mat, Vector(at), rot, outline)
+
+
+def profile_radius(profile: list, t: float) -> float:
+    """A lathe profile's radius at t, interpolated."""
+    for (t0, r0), (t1, r1) in zip(profile, profile[1:]):
+        if t0 <= t <= t1:
+            return r0 + (r1 - r0) * (t - t0) / (t1 - t0)
+    return profile[-1][1]
+
+
+def dome(rad: float, n: int = 8) -> list:
+    """A quarter-ellipse lathe profile: a bowl from its rim (t=0) to its crown."""
+    return [(i / n, max(rad * math.sqrt(1 - (i / n) ** 2), 0.004)) for i in range(n + 1)]
+
+
+def head_point(fwd: float, side: float, up: float) -> Vector:
+    """A point in the head's frame: forward along the gaze, side towards its left (away
+    from the camera), up."""
+    f = Vector((math.cos(HEAD_YAW), math.sin(HEAD_YAW), 0))
+    s = Vector((-math.sin(HEAD_YAW), math.cos(HEAD_YAW), 0))
+    return HEAD + f * fwd + s * side + Vector((0, 0, up))
+
+
+def body_point(fwd: float, side: float, z: float) -> Vector:
+    """A point on the turned torso: forward of the spine, side towards its left, at height z."""
+    f = Vector((math.cos(BODY_YAW), math.sin(BODY_YAW), 0))
+    s = Vector((-math.sin(BODY_YAW), math.cos(BODY_YAW), 0))
+    return f * fwd + s * side + Vector((0, 0, z))
+
+
+def basis_euler(x: Vector, z: Vector) -> Euler:
+    """The rotation whose local X and Z axes point along x and z."""
+    x, z = x.normalized(), z.normalized()
+    y = z.cross(x)
+    return Matrix((x, y, z)).transposed().to_euler()
+
+
+# --- Head ---
+
 def build_head(r: bpy.types.Object, is_norman: bool = False) -> None:
-    # 1. Neck with chain mail coif
-    rig.limb(r, "head", (0, 0, 1.42), (0.02, -0.04, 1.56), 0.125, "mail", verts=16)
-    add_outline(bpy.context.object)
+    hy = (0, 0, HEAD_YAW)
+    # Mail coif: a collar over the shoulders rising into a hood around the face
+    lathe(r, "head", (0, 0, 1.33), (0, 0, 1.56), [(0, 0.20), (0.3, 0.15), (0.65, 0.105), (1, 0.095)], "mail", segs=24)
+    blob(r, "head", head_point(-0.02, 0, 0.0), (0.125, 0.118, 0.14), "mail", rot=hy, outline=True)
 
-    # 2. Cranium base (mail coif extending over back of skull)
-    rig.ball(r, "head", (-0.01, 0.01, 1.62), 0.138, "mail", scale=(1.05, 0.98, 1.05))
-    add_outline(bpy.context.object)
-
-    # 3. 3/4 Face (skin tone) - tilted forward and facing (+X, -Y)
-    rig.ball(r, "head", (0.07, -0.07, 1.60), 0.115, "skin", scale=(1.12, 0.92, 0.96))
-
-    # Prominent nose pointing forward-right
-    rig.cone(r, "head", (0.17, -0.09, 1.61), 0.032, 0.08, "skin", top=0.01)
-    bpy.context.object.rotation_euler = (math.radians(-75), math.radians(20), 0)
-
-    # Brow ridge & eye socket shadow
-    rig.box(r, "head", (0.14, -0.10, 1.65), (0.03, 0.08, 0.025), "dark_steel")
-    rig.ball(r, "head", (0.145, -0.11, 1.64), 0.015, "skin")
-    rig.ball(r, "head", (0.148, -0.115, 1.64), 0.008, "dark_steel")
-
-    # Mouth / mustache
-    rig.box(r, "head", (0.13, -0.09, 1.55), (0.04, 0.08, 0.04), "hair" if not is_norman else "skin")
-
-    # Mail coif framing the face: chin wrap and cheek covers
-    rig.limb(r, "head", (0.05, -0.04, 1.53), (0.05, 0.06, 1.53), 0.12, "mail", verts=16, scale=(1.0, 0.5))
-    add_outline(bpy.context.object)
+    # The face pokes out of the hood's front, so the coif frames it in an oval
+    blob(r, "head", head_point(0.03, 0, -0.015), (0.10, 0.088, 0.112), "skin", rot=hy, outline=True)
+    blob(r, "head", head_point(0.128, 0, -0.002), (0.03, 0.018, 0.036), "skin", rot=hy)  # nose
+    for side in (-0.038, 0.038):
+        blob(r, "head", head_point(0.110, side, 0.028), (0.011, 0.018, 0.012), "eye", rot=hy, segs=12, rings=8)
+        blob(r, "head", head_point(0.119, side, 0.027), (0.006, 0.009, 0.010), "pupil", rot=hy, segs=12, rings=8)
+        blob(r, "head", head_point(0.116, side, 0.050), (0.012, 0.027, 0.008), "hair", rot=hy, segs=12, rings=8)
 
     if not is_norman:
-        # Saxon helmet: steel bowl with spangenhelm bands and rivets
-        rig.ball(r, "head", (0.01, 0.01, 1.68), 0.155, "steel", scale=(1.06, 0.98, 1.02))
-        add_outline(bpy.context.object)
-        rig.limb(r, "head", (0.01, 0.01, 1.64), (0.01, 0.01, 1.67), 0.162, "gold", verts=20, scale=(1.06, 0.98))
-        rig.box(r, "head", (0.01, 0.01, 1.76), (0.33, 0.035, 0.02), "gold")
-        rig.box(r, "head", (0.01, 0.01, 1.76), (0.035, 0.31, 0.02), "gold")
-        rig.ball(r, "head", (0.01, 0.01, 1.78), 0.025, "gold")
+        # Saxon: full beard and drooping moustache
+        blob(r, "head", head_point(0.07, 0, -0.08), (0.065, 0.075, 0.065), "hair", rot=hy, outline=True)
+        blob(r, "head", head_point(0.10, 0, -0.115), (0.04, 0.045, 0.045), "hair", rot=hy)
+        for side in (-0.026, 0.026):
+            blob(r, "head", head_point(0.122, side, -0.038), (0.014, 0.032, 0.012), "hair",
+                 rot=(0, math.radians(20 if side < 0 else -20), HEAD_YAW), segs=12, rings=8)
     else:
-        # Norman helmet: conical steel helmet with nasal bar
-        rig.cone(r, "head", (0.01, 0.01, 1.78), 0.16, 0.32, "steel", top=0.02, scale=(1.05, 0.98))
-        # Smooth the facets so the sun doesn't flash one of them white
-        for p in bpy.context.object.data.polygons:
-            p.use_smooth = True
-        add_outline(bpy.context.object)
-        rig.limb(r, "head", (0.01, 0.01, 1.64), (0.01, 0.01, 1.67), 0.164, "steel", verts=20, scale=(1.06, 0.98))
-        rig.box(r, "head", (0.17, -0.08, 1.62), (0.035, 0.035, 0.14), "steel")
-        add_outline(bpy.context.object)
+        # Norman: clean-shaven, a firm jaw and a mouth line
+        blob(r, "head", head_point(0.07, 0, -0.075), (0.06, 0.07, 0.06), "skin", rot=hy, outline=True)
+        blob(r, "head", head_point(0.128, 0, -0.052), (0.004, 0.022, 0.004), "pupil", rot=hy, segs=12, rings=8)
+
+    # Helmet
+    rim = HEAD + Vector((0, 0, 0.055))
+    band = "gold" if not is_norman else "dark_steel"
+    if not is_norman:
+        # Spangenhelm: a steel bowl with gilt brow band, crest and cross bands
+        lathe(r, "head", rim, rim + Vector((0, 0, 0.14)), dome(0.132), "steel", segs=28, scale=(1.0, 0.94), yaw=HEAD_YAW)
+        lathe(r, "head", rim, rim + Vector((0, 0, 0.146)), dome(0.138), "gold", segs=28, scale=(1.0, 0.13), yaw=HEAD_YAW, outline=False)
+        lathe(r, "head", rim, rim + Vector((0, 0, 0.146)), dome(0.138), "gold", segs=28, scale=(0.13, 0.98), yaw=HEAD_YAW, outline=False)
+        blob(r, "head", rim + Vector((0, 0, 0.148)), (0.022, 0.022, 0.018), "gold")
+    else:
+        # Conical nasal helmet
+        lathe(r, "head", rim, rim + Vector((0, 0, 0.22)),
+              [(0, 0.136), (0.15, 0.132), (0.4, 0.105), (0.7, 0.058), (0.92, 0.016), (1, 0.004)],
+              "steel", segs=28, scale=(1.0, 0.95), yaw=HEAD_YAW)
+    lathe(r, "head", rim - Vector((0, 0, 0.004)), rim + Vector((0, 0, 0.026)), [(0, 0.139), (1, 0.139)], band,
+          segs=28, scale=(1.0, 0.95), yaw=HEAD_YAW)
+    # Nasal bar down over the nose, and rivets along the brow band
+    blob(r, "head", head_point(0.138, 0, 0.012), (0.011, 0.019 if not is_norman else 0.024, 0.055), band, rot=hy, outline=True)
+    for ang in (-70, -35, 35, 70):
+        a = HEAD_YAW + math.radians(ang)
+        blob(r, "head", rim + Vector((math.cos(a) * 0.141, math.sin(a) * 0.141 * 0.95, 0.011)), (0.009, 0.009, 0.009),
+             "gold" if not is_norman else "steel", segs=10, rings=6)
+
+
+# --- Body ---
+
+def pleated(r, bone, top_z, bot_z, top_r, bot_r, mat, depth=0.02, folds=10, segs=40, scale=(1.15, 1.25), outline=True):
+    """A flared, pleated skirt around the turned hips, open at both ends."""
+    bm = bmesh.new()
+    rows = []
+    for z, rad, amp in ((top_z, top_r, depth * 0.4), (bot_z, bot_r, depth)):
+        row = []
+        for i in range(segs):
+            ang = 2 * math.pi * i / segs
+            rr = rad + amp * math.cos(ang * folds)
+            x, y = rr * math.cos(ang) * scale[0], rr * math.sin(ang) * scale[1]
+            row.append(bm.verts.new((x * math.cos(BODY_YAW) - y * math.sin(BODY_YAW),
+                                     x * math.sin(BODY_YAW) + y * math.cos(BODY_YAW), z)))
+        rows.append(row)
+    for i in range(segs):
+        j = (i + 1) % segs
+        bm.faces.new((rows[0][i], rows[0][j], rows[1][j], rows[1][i]))
+    ob = mesh_object(r, bone, bm, mat, outline=outline)
+    # A "fallen" shape key draws the hem in around the legs, so a body lying on its
+    # back doesn't fan the skirt up like a lampshade (see drape).
+    ob.shape_key_add(name="Basis")
+    key = ob.shape_key_add(name="fallen")
+    for v in key.data:
+        # Measured from the waist, so the skirt layers and the hem band draw in together
+        k = 1 - 0.45 * (0.96 - v.co.z) / 0.30
+        v.co.x, v.co.y = v.co.x * k, v.co.y * k
+    return ob
+
+
+def drape(r: bpy.types.Object, fallen: float) -> None:
+    """Sets how far the skirts hug the legs, from standing (0) to lying down (1)."""
+    for ob in r.children_recursive:
+        keys = ob.data.shape_keys if ob.type == "MESH" else None
+        if keys and "fallen" in keys.key_blocks:
+            keys.key_blocks["fallen"].value = fallen
 
 
 def build_torso(r: bpy.types.Object, is_norman: bool = False) -> None:
-    # 1. Chain mail hauberk torso
-    rig.limb(r, "spine", (0, 0, 0.96), (0, 0, 1.40), 0.17, "mail", scale=(1.15, 1.25), verts=20)
-    add_outline(bpy.context.object)
+    by = BODY_YAW
+    # Mail hauberk: waist, broad chest, sloping shoulders
+    lathe(r, "spine", (0, 0, 0.90), (0, 0, 1.42),
+          [(0, 0.165), (0.25, 0.16), (0.55, 0.18), (0.8, 0.19), (0.92, 0.16), (1, 0.10)],
+          "mail", segs=28, scale=(0.78, 1.25), yaw=by)
+    # Sleeveless tunic over it, with gilt trim at the neck
+    lathe(r, "spine", (0, 0, 0.94), (0, 0, 1.37),
+          [(0, 0.188), (0.4, 0.192), (0.75, 0.205), (0.9, 0.198), (1, 0.172)],
+          "tint", segs=28, scale=(0.82, 1.28), yaw=by)
+    lathe(r, "spine", (0, 0, 1.355), (0, 0, 1.385), [(0, 0.15), (1, 0.13)], "gold", segs=28, scale=(0.82, 1.28), yaw=by, outline=False)
 
-    # 2. Green sleeveless tunic with chest volume
-    rig.limb(r, "spine", (0, -0.04, 1.00), (0, -0.04, 1.36), 0.19, "tint", scale=(1.12, 1.22), verts=20)
-    add_outline(bpy.context.object)
+    # Belt with buckle and a hanging strap end
+    lathe(r, "root", (0, 0, 0.93), (0, 0, 1.0), [(0, 0.197), (1, 0.197)], "leather", segs=28, scale=(0.84, 1.28), yaw=by)
+    buckle = body_point(0.168, -0.02, 0.965)
+    blob(r, "root", buckle, (0.012, 0.035, 0.04), "gold", rot=(0, 0, by), outline=True, segs=12, rings=8)
+    lathe(r, "root", body_point(0.17, 0.02, 0.95), body_point(0.175, 0.03, 0.80), [(0, 0.016), (1, 0.016)], "leather",
+          segs=8, scale=(0.4, 1.0), yaw=0)
+    blob(r, "root", body_point(0.176, 0.03, 0.795), (0.008, 0.018, 0.016), "gold", rot=(0, 0, by), segs=10, rings=6)
 
-    # 3. Leather belt with gold buckle and hanging strap
-    rig.limb(r, "root", (0, -0.04, 0.94), (0, -0.04, 1.01), 0.21, "leather", scale=(1.12, 1.24), verts=20)
-    rig.box(r, "root", (0.16, -0.16, 0.975), (0.03, 0.08, 0.05), "gold")
-    rig.box(r, "root", (0.14, -0.20, 0.84), (0.018, 0.045, 0.22), "leather")
-
-    # 4. Flared tunic skirt with deep pleated folds and shadow
-    skirt_bm = bmesh.new()
-    segs = 24
-    top_z, bot_z = 0.97, 0.68 if not is_norman else 0.62
-    top_r, bot_r = 0.20, 0.29 if not is_norman else 0.28
-
-    top_verts, bot_verts = [], []
-    for i in range(segs):
-        ang = 2 * math.pi * i / segs
-        pleat = 0.02 * math.cos(ang * 8)
-        tx = (top_r + pleat) * math.cos(ang) * 1.12
-        ty = ((top_r + pleat) * math.sin(ang) - 0.04) * 1.22
-        bx = (bot_r + pleat * 2.2) * math.cos(ang) * 1.12
-        by = ((bot_r + pleat * 2.2) * math.sin(ang) - 0.04) * 1.22
-        top_verts.append(skirt_bm.verts.new((tx, ty, top_z)))
-        bot_verts.append(skirt_bm.verts.new((bx, by, bot_z)))
-
-    for i in range(segs):
-        next_i = (i + 1) % segs
-        skirt_bm.faces.new((top_verts[i], top_verts[next_i], bot_verts[next_i], bot_verts[i]))
-
-    skirt_mesh = bpy.data.meshes.new("skirt_mesh")
-    skirt_bm.to_mesh(skirt_mesh)
-    skirt_bm.free()
-
-    skirt_ob = bpy.data.objects.new("skirt_ob", skirt_mesh)
-    bpy.context.collection.objects.link(skirt_ob)
-    for p in skirt_ob.data.polygons:
-        p.use_smooth = True
-    rig.attach(skirt_ob, r, "root", "tint")
-    add_outline(skirt_ob)
+    # Mail skirt of the hauberk, then the tunic skirt over it with a gilt hem
+    hem = 0.66 if not is_norman else 0.62
+    pleated(r, "root", 0.95, hem - 0.10, 0.155, 0.28, "mail", depth=0.012, folds=7)
+    pleated(r, "root", 0.96, hem, 0.17, 0.30, "tint", depth=0.022, folds=8)
+    pleated(r, "root", hem + 0.035, hem - 0.002, 0.292, 0.302, "gold", depth=0.022, folds=8, outline=False)
 
     # Scabbard on the far (left) hip, hanging back behind the far leg so it doesn't
     # read as a third leg between the feet
-    rig.limb(r, "root", (-0.08, 0.24, 0.96), (-0.40, 0.24, 0.42), 0.04, "leather", verts=8, scale=(1.0, 0.35))
-    rig.box(r, "root", (-0.08, 0.24, 0.95), (0.05, 0.05, 0.04), "gold")
-    rig.ball(r, "root", (-0.41, 0.24, 0.40), 0.035, "gold", scale=(1.0, 0.5, 1.0))
+    lathe(r, "root", (-0.08, 0.24, 0.96), (-0.40, 0.24, 0.42), [(0, 0.04), (0.9, 0.034), (1, 0.03)], "leather",
+          segs=12, scale=(1.0, 0.35))
+    blob(r, "root", (-0.08, 0.24, 0.95), (0.03, 0.03, 0.025), "gold", segs=12, rings=8)
+    blob(r, "root", (-0.41, 0.24, 0.40), (0.035, 0.02, 0.035), "gold", segs=12, rings=8)
 
 
-def build_limbs(r: bpy.types.Object) -> None:
-    # Near Leg (right leg forward in fencer stance)
-    create_muscle_limb(
-        r, "thigh.N",
-        (0.06, -0.12, 0.90), (0.18, -0.14, 0.48),
-        [(0.0, 0.128), (0.35, 0.140), (0.7, 0.115), (1.0, 0.098)],
-        "mail", scale=(1.05, 1.1)
-    )
-    create_muscle_limb(
-        r, "shin.N",
-        (0.18, -0.14, 0.48), (0.24, -0.14, 0.10),
-        [(0.0, 0.098), (0.25, 0.122), (0.6, 0.092), (0.9, 0.078), (1.0, 0.076)],
-        "mail", scale=(1.05, 1.05)
-    )
-    # Pointed leather turnshoe
-    rig.box(r, "shin.N", (0.30, -0.14, 0.05), (0.22, 0.11, 0.08), "boot")
-    add_outline(bpy.context.object)
+def build_limbs(r: bpy.types.Object, is_norman: bool = False) -> None:
+    legs = "mail" if is_norman else "hose"
+    for side, (hip, knee, ankle) in {
+        "N": ((0.06, -0.12, 0.90), (0.18, -0.14, 0.48), (0.24, -0.14, 0.08)),
+        "F": ((-0.06, 0.12, 0.90), (-0.22, 0.12, 0.50), (-0.28, 0.12, 0.08)),
+    }.items():
+        hip, knee, ankle = Vector(hip), Vector(knee), Vector(ankle)
+        lathe(r, f"thigh.{side}", hip.lerp(knee, 0.2), knee, [(0, 0.09), (0.25, 0.1), (0.7, 0.088), (1, 0.075)], legs, segs=18)
+        blob(r, f"shin.{side}", knee, (0.075, 0.072, 0.075), legs, outline=True, segs=16, rings=10)
+        # Leg wraps crossing the shin (Saxon) or straps holding the chausses (Norman),
+        # each band a little proud of the shin's surface
+        shin = [(0, 0.074), (0.3, 0.084), (0.75, 0.06), (1, 0.052)]
+        lathe(r, f"shin.{side}", knee, ankle, shin, "mail" if is_norman else "linen", segs=18)
+        d = ankle - knee
+        for k, t in enumerate((0.22, 0.4, 0.58, 0.76, 0.92) if not is_norman else (0.3, 0.75)):
+            c = knee + d * t
+            tilt = Vector((0.012 if k % 2 else -0.012, 0, 0)) if not is_norman else Vector()
+            rad = profile_radius(shin, t) + 0.006
+            lathe(r, f"shin.{side}", c - d.normalized() * 0.01 + tilt, c + d.normalized() * 0.01 - tilt,
+                  [(0, rad), (1, rad)], "leather", segs=18, outline=False)
+        # Turnshoe: a pointed leather shoe with an ankle cuff
+        blob(r, f"shin.{side}", ankle + Vector((0.07, 0, -0.04)), (0.125, 0.055, 0.048), "boot", outline=True)
+        lathe(r, f"shin.{side}", ankle + Vector((0, 0, -0.03)), ankle + Vector((0, 0, 0.03)), [(0, 0.06), (1, 0.056)], "boot", segs=16)
 
-    # Far Leg (left leg back)
-    create_muscle_limb(
-        r, "thigh.F",
-        (-0.06, 0.12, 0.90), (-0.22, 0.12, 0.50),
-        [(0.0, 0.128), (0.35, 0.140), (0.7, 0.115), (1.0, 0.098)],
-        "mail", scale=(1.05, 1.1)
-    )
-    create_muscle_limb(
-        r, "shin.F",
-        (-0.22, 0.12, 0.50), (-0.28, 0.12, 0.10),
-        [(0.0, 0.098), (0.25, 0.122), (0.6, 0.092), (0.9, 0.078), (1.0, 0.076)],
-        "mail", scale=(1.05, 1.05)
-    )
-    rig.box(r, "shin.F", (-0.22, 0.12, 0.05), (0.22, 0.11, 0.08), "boot")
-    add_outline(bpy.context.object)
-
-    # Near Arm (right arm, sword arm - pulled back to open chest)
-    create_muscle_limb(
-        r, "upperarm.N",
-        (-0.06, -0.22, 1.36), (-0.14, -0.20, 1.10),
-        [(0.0, 0.105), (0.4, 0.118), (0.8, 0.098), (1.0, 0.088)],
-        "mail"
-    )
-    create_muscle_limb(
-        r, "forearm.N",
-        (-0.14, -0.20, 1.10), (0.16, -0.18, 1.14),
-        [(0.0, 0.088), (0.3, 0.098), (0.7, 0.078), (1.0, 0.068)],
-        "mail"
-    )
-    rig.ball(r, "forearm.N", (0.16, -0.18, 1.14), 0.065, "leather", scale=(1.1, 0.9, 0.9))
-    rig.box(r, "forearm.N", (0.18, -0.20, 1.14), (0.05, 0.035, 0.08), "leather")
-
-    # Far Arm (left arm holding shield forward)
-    create_muscle_limb(
-        r, "upperarm.F",
-        (0.12, 0.18, 1.36), (0.26, 0.14, 1.16),
-        [(0.0, 0.105), (0.4, 0.118), (0.8, 0.098), (1.0, 0.088)],
-        "mail"
-    )
-    create_muscle_limb(
-        r, "forearm.F",
-        (0.26, 0.14, 1.16), (0.36, 0.06, 1.18),
-        [(0.0, 0.088), (0.3, 0.098), (0.7, 0.078), (1.0, 0.068)],
-        "mail"
-    )
-    rig.ball(r, "forearm.F", (0.36, 0.06, 1.18), 0.065, "leather")
+    for side, (shoulder, elbow, wrist) in {
+        "N": ((-0.06, -0.22, 1.36), (-0.14, -0.20, 1.10), (0.16, -0.18, 1.14)),
+        "F": ((0.12, 0.18, 1.36), (0.26, 0.14, 1.16), (0.36, 0.06, 1.18)),
+    }.items():
+        shoulder, elbow, wrist = Vector(shoulder), Vector(elbow), Vector(wrist)
+        # Rounded mail shoulder, sleeve to the elbow, then a padded forearm and leather cuff
+        blob(r, f"upperarm.{side}", shoulder + Vector((0, 0, -0.01)), (0.088, 0.082, 0.08), "mail", outline=True)
+        lathe(r, f"upperarm.{side}", shoulder, elbow, [(0, 0.085), (0.4, 0.09), (0.85, 0.074), (1, 0.07)], "mail", segs=18)
+        blob(r, f"forearm.{side}", elbow, (0.07, 0.068, 0.07), "mail", outline=True, segs=16, rings=10)
+        mid = elbow.lerp(wrist, 0.55)
+        lathe(r, f"forearm.{side}", elbow, mid, [(0, 0.07), (1, 0.064)], "mail" if is_norman else "hose", segs=18)
+        lathe(r, f"forearm.{side}", mid, wrist, [(0, 0.066), (0.8, 0.06), (1, 0.064)], "leather", segs=18)
+    # Shield hand, mostly behind the shield
+    blob(r, "forearm.F", (0.37, 0.05, 1.18), (0.05, 0.045, 0.05), "leather", outline=True)
 
 
-def build_sword_mesh(r: bpy.types.Object) -> None:
+# --- Sword ---
+
+def build_sword_mesh(r: bpy.types.Object, is_norman: bool = False) -> None:
     head = Vector((0.16, -0.18, 1.14))
-    tail = Vector((0.68, -0.18, 1.76))
-    d = tail - head
-    axis = d.normalized()
+    tip = Vector((0.68, -0.18, 1.76))
+    u = (tip - head).normalized()
+    v = u.cross(Vector((0, 1, 0))).normalized()  # across the blade, in the view plane
+    w = Vector((0, -1, 0))  # towards the camera
+    hilt = "gold" if not is_norman else "dark_steel"
 
-    # Pommel
-    p_pos = head - axis * 0.08
-    rig.ball(r, "sword", p_pos, 0.04, "gold", scale=(1.1, 0.8, 1.1))
-    add_outline(bpy.context.object)
+    guard = head + u * 0.03
+    blade_start = guard + u * 0.012
 
-    # Leather wrapped grip
-    rig.limb(r, "sword", p_pos, head + axis * 0.02, 0.024, "leather", verts=12)
+    # Blade: diamond section, tapering, with a dark fuller down the face
+    bm = bmesh.new()
+    rings = []
+    for t, hw, ht in ((0.0, 0.027, 0.0075), (0.8, 0.02, 0.006), (0.94, 0.012, 0.004)):
+        c = blade_start.lerp(tip, t)
+        rings.append([bm.verts.new(p) for p in (c + v * hw, c + w * ht, c - v * hw, c - w * ht)])
+    point = bm.verts.new(tip)
+    for k in range(len(rings) - 1):
+        for i in range(4):
+            j = (i + 1) % 4
+            bm.faces.new((rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i]))
+    for i in range(4):
+        bm.faces.new((rings[-1][i], rings[-1][(i + 1) % 4], point))
+    bm.faces.new(list(reversed(rings[0])))
+    mesh_object(r, "sword", bm, "steel", thickness=-0.004)
 
-    # Crossguard
-    guard_pos = head + axis * 0.03
-    rig.box(r, "sword", guard_pos, (0.035, 0.24, 0.025), "gold")
-    add_outline(bpy.context.object)
+    bm = bmesh.new()
+    a, b = blade_start + u * 0.02, blade_start.lerp(tip, 0.72)
+    f = [bm.verts.new(p + w * 0.0085) for p in (a - v * 0.006, a + v * 0.006, b + v * 0.004, b - v * 0.004)]
+    bm.faces.new(f)
+    mesh_object(r, "sword", bm, "dark_steel", outline=False)
 
-    # Blade with fuller groove
-    blade_start = guard_pos + axis * 0.02
-    blade_end = tail - axis * 0.06
+    # Crossguard tapering to knobbed ends
+    lathe(r, "sword", guard - v * 0.125, guard + v * 0.125,
+          [(0, 0.011), (0.12, 0.014), (0.5, 0.019), (0.88, 0.014), (1, 0.011)], hilt, segs=12)
+    for e in (-1, 1):
+        blob(r, "sword", guard + v * 0.128 * e, (0.017, 0.017, 0.017), hilt, segs=12, rings=8)
 
-    blade_bm = bmesh.new()
-    b_len = (blade_end - blade_start).length
-    w, th = 0.055, 0.016
-    v1 = blade_bm.verts.new((0, -w / 2, -b_len / 2))
-    v2 = blade_bm.verts.new((th / 2, 0, -b_len / 2))
-    v3 = blade_bm.verts.new((0, w / 2, -b_len / 2))
-    v4 = blade_bm.verts.new((-th / 2, 0, -b_len / 2))
+    # Grip, wrapped, and a lobed pommel
+    pommel = head - u * 0.105
+    lathe(r, "sword", pommel + u * 0.02, guard - u * 0.01, [(0, 0.017), (0.5, 0.02), (1, 0.017)], "leather", segs=12)
+    blob(r, "sword", pommel, (0.044, 0.024, 0.03), hilt, rot=basis_euler(v, u), outline=True, segs=16, rings=10)
 
-    w_tip, th_tip = 0.038, 0.012
-    v5 = blade_bm.verts.new((0, -w_tip / 2, b_len / 2))
-    v6 = blade_bm.verts.new((th_tip / 2, 0, b_len / 2))
-    v7 = blade_bm.verts.new((0, w_tip / 2, b_len / 2))
-    v8 = blade_bm.verts.new((-th_tip / 2, 0, b_len / 2))
+    # Gloved fist around the grip, with the thumb over the fingers; it follows the
+    # sword bone so the hand stays on the hilt as the wrist turns
+    blob(r, "sword", head - u * 0.035 + w * 0.006, (0.05, 0.048, 0.058), "leather", rot=basis_euler(v, u), outline=True)
+    blob(r, "sword", head - u * 0.005 + w * 0.04 + v * 0.012, (0.016, 0.016, 0.03), "leather", rot=basis_euler(v, u))
 
-    blade_bm.faces.new((v1, v2, v6, v5))
-    blade_bm.faces.new((v2, v3, v7, v6))
-    blade_bm.faces.new((v3, v4, v8, v7))
-    blade_bm.faces.new((v4, v1, v5, v8))
 
-    v_pt = blade_bm.verts.new((0, 0, b_len / 2 + 0.06))
-    blade_bm.faces.new((v5, v6, v_pt))
-    blade_bm.faces.new((v6, v7, v_pt))
-    blade_bm.faces.new((v7, v8, v_pt))
-    blade_bm.faces.new((v8, v5, v_pt))
-
-    blade_mesh = bpy.data.meshes.new("blade_mesh")
-    blade_bm.to_mesh(blade_mesh)
-    blade_bm.free()
-
-    blade_ob = bpy.data.objects.new("blade_ob", blade_mesh)
-    bpy.context.collection.objects.link(blade_ob)
-    blade_ob.location = (blade_start + blade_end) / 2
-    blade_ob.rotation_euler = axis.to_track_quat("Z", "Y").to_euler()
-
-    for p in blade_ob.data.polygons:
-        p.use_smooth = True
-
-    rig.attach(blade_ob, r, "sword", "steel")
-    add_outline(blade_ob, thickness=-0.005)
-
+# --- Shields ---
 
 def build_shield(r: bpy.types.Object, is_norman: bool = False) -> None:
+    # Held out in front, its face turned mostly to the camera
+    n = Vector((0.25, -0.97, 0)).normalized()
+    x = Vector((0, 0, 1)).cross(n).normalized() * -1  # across the face, towards +X
+    up = Vector((0, 0, 1))
     if not is_norman:
-        center = Vector((0.32, -0.02, 1.18))
-        rig.limb(r, "shield", center + Vector((-0.01, 0.02, 0)), center - Vector((-0.01, 0.02, 0)), 0.28, "steel", verts=24)
-        add_outline(bpy.context.object)
-        rig.limb(r, "shield", center + Vector((-0.01, 0.015, 0)), center - Vector((-0.01, 0.025, 0)), 0.265, "tint", verts=24)
-        rig.ball(r, "shield", center - Vector((-0.01, 0.035, 0)), 0.085, "steel", scale=(1, 0.5, 1))
-        add_outline(bpy.context.object)
+        c = Vector((0.33, -0.03, 1.18))
+        # Painted board, rawhide-bound rim, iron boss on a riveted flange
+        lathe(r, "shield", c - n * 0.012, c + n * 0.012, [(0, 0.27), (1, 0.27)], "tint", segs=40)
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.272, minor_radius=0.016, major_segments=48, minor_segments=8,
+                                         location=c, rotation=n.to_track_quat("Z", "Y").to_euler())
+        rim = bpy.context.object
+        for p in rim.data.polygons:
+            p.use_smooth = True
+        rig.attach(rim, r, "shield", "leather")
+        add_outline(rim)
+        lathe(r, "shield", c + n * 0.012, c + n * 0.016, [(0, 0.1), (1, 0.1)], "steel", segs=24, outline=False)
+        lathe(r, "shield", c + n * 0.014, c + n * 0.09, dome(0.075), "steel", segs=24)
+        for k in range(6):
+            a = 2 * math.pi * k / 6 + 0.3
+            blob(r, "shield", c + n * 0.017 + (x * math.cos(a) + up * math.sin(a)) * 0.088, (0.009, 0.009, 0.009),
+                 "gold", segs=10, rings=6)
+        # Ring of studs near the rim
+        for k in range(12):
+            a = 2 * math.pi * k / 12
+            blob(r, "shield", c + n * 0.013 + (x * math.cos(a) + up * math.sin(a)) * 0.235, (0.008, 0.008, 0.008),
+                 "gold", segs=10, rings=6)
     else:
-        center = Vector((0.32, -0.02, 1.16))
-        rig.limb(r, "shield", center + Vector((-0.01, 0.02, 0.12)), center - Vector((-0.01, 0.02, -0.12)), 0.23, "steel", verts=20, scale=(1.0, 0.35))
-        add_outline(bpy.context.object)
-        rig.limb(r, "shield", center + Vector((-0.01, 0.015, 0.12)), center - Vector((-0.01, 0.025, -0.12)), 0.215, "tint", verts=20, scale=(1.0, 0.35))
-        rig.cone(r, "shield", center - Vector((-0.01, 0.01, 0.18)), 0.215, 0.62, "tint", top=0.215, scale=(1.0, 0.35))
-        add_outline(bpy.context.object)
-        rig.box(r, "shield", center - Vector((-0.01, 0.025, 0.05)), (0.035, 0.035, 0.68), "steel")
-        rig.ball(r, "shield", center - Vector((-0.01, 0.035, -0.05)), 0.08, "steel", scale=(1, 0.5, 1))
-        add_outline(bpy.context.object)
+        c = Vector((0.33, -0.04, 1.12))
+        kite(r, c, n, x, up, 1.0, 0.012, "tint")
+        kite(r, c - n * 0.006, n, x, up, 1.08, 0.008, "steel")
+        # Boss and studs along the edge
+        lathe(r, "shield", c + n * 0.006, c + n * 0.07, dome(0.06), "steel", segs=24)
+        for y in (0.30, 0.15, 0.0, -0.15, -0.30):
+            for e in (-1, 1):
+                hw = kite_half_width(y) * 0.86
+                blob(r, "shield", kite_point(c, n, x, up, e * hw, y, 0.014), (0.009, 0.009, 0.009), "gold", segs=10, rings=6)
+
+
+def kite_half_width(y: float) -> float:
+    """The kite shield's half width at height y: a rounded top over a long point."""
+    if y >= 0.30:
+        return 0.225 * math.sqrt(max(1 - ((y - 0.30) / 0.07) ** 2, 0.0))
+    return 0.225 * ((y + 0.52) / 0.82) ** 0.75
+
+
+def kite_point(c, n, x, up, sx, y, depth):
+    """A point on the kite's face, which curves back around its vertical axis."""
+    return c + x * sx + up * y + n * (depth - 0.9 * sx * sx)
+
+
+def kite(r, c, n, x, up, size, thick, mat):
+    bm = bmesh.new()
+    rows, cols = 26, 10
+    ys = [0.37 - (0.37 + 0.52) * i / (rows - 1) for i in range(rows)]
+    grid = {}
+    for face, depth in (("front", thick), ("back", -thick)):
+        grid[face] = []
+        for y in ys:
+            hw = max(kite_half_width(y), 0.004) * size
+            grid[face].append([bm.verts.new(kite_point(c, n, x, up, -hw + 2 * hw * j / (cols - 1), y * size, depth))
+                               for j in range(cols)])
+    for face in ("front", "back"):
+        g = grid[face]
+        for i in range(rows - 1):
+            for j in range(cols - 1):
+                bm.faces.new((g[i][j], g[i][j + 1], g[i + 1][j + 1], g[i + 1][j]))
+    f, b = grid["front"], grid["back"]
+    border = [(f[0][j], b[0][j]) for j in range(cols)] + [(f[i][-1], b[i][-1]) for i in range(1, rows)] + \
+        [(f[-1][j], b[-1][j]) for j in range(cols - 2, -1, -1)] + [(f[i][0], b[i][0]) for i in range(rows - 2, 0, -1)]
+    for k in range(len(border)):
+        (f0, b0), (f1, b1) = border[k], border[(k + 1) % len(border)]
+        bm.faces.new((f0, f1, b1, b0))
+    mesh_object(r, "shield", bm, mat)
 
 
 def build_hero(r: bpy.types.Object) -> None:
     setup_materials_and_lighting()
     build_head(r, is_norman=False)
     build_torso(r, is_norman=False)
-    build_limbs(r)
-    build_sword_mesh(r)
+    build_limbs(r, is_norman=False)
+    build_sword_mesh(r, is_norman=False)
     build_shield(r, is_norman=False)
     add_dramatic_lighting()
 
@@ -449,8 +545,8 @@ def build_guard(r: bpy.types.Object) -> None:
     setup_materials_and_lighting()
     build_head(r, is_norman=True)
     build_torso(r, is_norman=True)
-    build_limbs(r)
-    build_sword_mesh(r)
+    build_limbs(r, is_norman=True)
+    build_sword_mesh(r, is_norman=True)
     build_shield(r, is_norman=True)
     add_dramatic_lighting()
 
@@ -490,6 +586,7 @@ def pose(
     rig.swing(r, "forearm.F", forearm_f - upperarm_f)
     if "shield" in r.pose.bones:
         rig.swing(r, "shield", shield - forearm_f)
+    drape(r, 0.0)
     rig.ground(r, foot_offset=0.08)
 
 
@@ -719,7 +816,7 @@ def hit_pose(r: bpy.types.Object, i: int) -> None:
         )
 
 
-def lie(r: bpy.types.Object, swings: dict, shield_flat: float, target_z: float) -> None:
+def lie(r: bpy.types.Object, swings: dict, shield_flat: float, target_z: float, fallen: float = 1.0) -> None:
     """Poses a falling body by relative swings, optionally laying the shield face down."""
     r.pose.bones["root"].location = (0, 0, 0)
     for bone in ("root", "spine", "head", "thigh.N", "shin.N", "thigh.F", "shin.F",
@@ -729,6 +826,7 @@ def lie(r: bpy.types.Object, swings: dict, shield_flat: float, target_z: float) 
         # Tip the shield about its own X axis so it lies on the floor instead of through it.
         pb = r.pose.bones["shield"]
         pb.rotation_quaternion = pb.rotation_quaternion @ Matrix.Rotation(math.radians(shield_flat), 3, "X").to_quaternion()
+    drape(r, fallen)
     ground_fall(r, target_z=target_z)
 
 
@@ -754,11 +852,11 @@ def fall_pose(r: bpy.types.Object, i: int) -> None:
     elif i == 1:
         # Toppling backwards, sword arm flung up
         lie(r, {"root": 40, "spine": -10, "head": 10, "thigh.N": -25, "shin.N": 35, "thigh.F": -10, "shin.F": 30,
-                "upperarm.N": -40, "forearm.N": 20, "sword": 20, "upperarm.F": -30, "forearm.F": 20}, 0, 0.10)
+                "upperarm.N": -40, "forearm.N": 20, "sword": 20, "upperarm.F": -30, "forearm.F": 20}, 0, 0.10, fallen=0.4)
     elif i == 2:
         # Hitting the floor, the shield slipping off the arm
         lie(r, {"root": 78, "spine": -6, "head": 6, "thigh.N": -20, "shin.N": 25, "thigh.F": -5, "shin.F": 15,
-                "upperarm.N": -40, "forearm.N": 30, "sword": 70, "upperarm.F": -60, "forearm.F": 20}, 60, 0.13)
+                "upperarm.N": -40, "forearm.N": 30, "sword": 70, "upperarm.F": -60, "forearm.F": 20}, 60, 0.13, fallen=0.85)
     else:
         # 3: Flat on back, sword lying on the floor past the head
         lie(r, {"root": 90, "head": 0, "thigh.N": -12, "shin.N": 14, "shin.F": 6,
