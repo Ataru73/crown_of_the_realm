@@ -3,6 +3,7 @@ import { HEIGHT, SceneKeys, WIDTH } from '../config';
 import { session } from '../game/session';
 import { addButton } from '../ui/Button';
 import { drawPainting } from '../ui/assets';
+import { playMusic } from '../ui/audio';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +11,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    playMusic(this, 'title');
     drawPainting(this, 'title', 'Crown of the Realm', 'England, 1149. The king is dead.');
     const hasSave = session.hasSave();
     if (hasSave) {

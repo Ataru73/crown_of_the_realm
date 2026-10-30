@@ -235,12 +235,16 @@ export function applyTournament(
 
 /**
  * Applies a raid's result (from the sword-fight minigame, or auto-resolved).
- * Returns the gold stolen.
+ * Returns the gold stolen. Breaking into an empty treasury earns no fame.
  */
 export function applyRaid(state: GameState, lordId: LordId, targetId: LordId, won: boolean): number {
   requireRival(state, lordId, targetId);
   const lord = state.lords[lordId];
   const target = state.lords[targetId];
+  if (won && target.gold < 2) {
+    addLog(state, `${lord.name} breaks into ${target.name}'s castle, but the treasury is empty.`);
+    return 0;
+  }
   if (won) {
     const stolen = Math.floor(target.gold / 2);
     target.gold -= stolen;

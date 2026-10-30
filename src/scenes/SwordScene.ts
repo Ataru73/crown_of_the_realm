@@ -21,6 +21,7 @@ import type { GameState, Lord, LordId } from '../model/types';
 import { Button } from '../ui/Button';
 import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
+import { playMusic, sfx } from '../ui/audio';
 
 export type SwordMission = { mission: 'raid'; target: LordId } | { mission: 'rescue' };
 
@@ -76,6 +77,7 @@ export class SwordScene extends Phaser.Scene {
       return;
     }
     this.state = session.state;
+    playMusic(this, 'swordfight');
     this.mission = data;
     this.player = playerLord(this.state);
     const kidnap = this.state.kidnap;
@@ -168,8 +170,10 @@ export class SwordScene extends Phaser.Scene {
 
   private act(move: 'strike' | 'parry'): void {
     if (this.finished) return;
-    if (move === 'strike') strike(this.fight);
-    else parry(this.fight);
+    if (move === 'strike') {
+      strike(this.fight);
+      sfx(this, 'swing', { volume: 0.5 });
+    } else parry(this.fight);
   }
 
   update(_time: number, delta: number): void {
@@ -249,24 +253,29 @@ export class SwordScene extends Phaser.Scene {
     const clashX = (HERO_X + GUARD_X) / 2;
     switch (e.type) {
       case 'hit':
+        sfx(this, 'sword_hit');
         this.spark(GUARD_X - 10, FLOOR_Y - 90, 0xff5040);
         this.say(e.down ? 'He falls!' : 'A telling blow!');
         break;
       case 'blocked':
+        sfx(this, 'sword_clash', { volume: 0.5 });
         this.spark(clashX, FLOOR_Y - 120);
         this.say('Blocked! Wait for an opening.');
         break;
       case 'parried':
+        sfx(this, 'sword_clash');
         this.spark(clashX, FLOOR_Y - 130);
         this.say('Parried! Strike now!');
         break;
       case 'wounded':
+        sfx(this, 'sword_hit', { rate: 0.8 });
         this.slash = SLASH_MS;
         this.cameras.main.shake(180, 0.01);
         this.cameras.main.flash(150, 160, 20, 20);
         this.say('You are wounded!');
         break;
       case 'nextGuard':
+        sfx(this, 'drum', { volume: 0.4 });
         this.say(this.fight.guardIndex === this.fight.guardHps.length - 1 && this.mission.mission === 'rescue'
           ? `${this.foe.name} himself bars the way!`
           : 'Another guard comes running!');
@@ -281,6 +290,7 @@ export class SwordScene extends Phaser.Scene {
     this.finished = true;
     this.controls.forEach((b) => b.destroy());
     this.warning.setVisible(false);
+    if (won) sfx(this, 'horn');
     const rescue = this.mission.mission === 'rescue';
     const lady = this.state.kidnap?.lady;
     this.add

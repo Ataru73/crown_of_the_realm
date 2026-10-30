@@ -6,6 +6,7 @@ import type { GameState, LordId, TerritoryId } from '../model/types';
 import { Button } from './Button';
 import { addParchment } from './assets';
 import { textStyle } from './theme';
+import { sfx } from './audio';
 
 const DEPTH = 100;
 
@@ -59,6 +60,7 @@ export function openBuyDialog(
     row.steps.forEach((qty, j) => {
       const button = new Button(scene, 110 + j * 54, y, `+${qty}`, () => {
         buy(state, lordId, row.unit, qty);
+        sfx(scene, 'coins', { volume: 0.5 });
         refreshAll();
       }, small);
       container.add(button);
@@ -69,7 +71,10 @@ export function openBuyDialog(
   const castleY = -65 + ROWS.length * 38;
   const castleLabel = scene.add.text(-195, castleY, '', textStyle(14)).setOrigin(0, 0.5);
   const castleButton = new Button(scene, 137, castleY, 'Build', () => {
-    if (selected) buildCastle(state, lordId, selected);
+    if (selected) {
+      buildCastle(state, lordId, selected);
+      sfx(scene, 'coins', { volume: 0.5 });
+    }
     refreshAll();
   }, { ...small, width: 100 });
   container.add([castleLabel, castleButton]);

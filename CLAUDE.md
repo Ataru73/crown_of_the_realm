@@ -1,12 +1,13 @@
 # Crown of the Realm
 
-A browser remake of Cinemaware's *Defender of the Crown* (1986): Saxon and Norman
-lords fight over medieval England on a turn-based campaign map, with arcade
+A browser strategy and action game of medieval England, inspired by 1980s retro classics:
+Saxon and Norman lords fight over England on a turn-based campaign map, with arcade
 minigames for battles, tournaments, raids, rescues and sieges.
 
-**IP rule:** the title, names, art and music must be original. Copy the mechanics
-only, never the original's names, images or music. Art is generated with Gemini and
-music with Lyria in the Gemini app, both through the browser. See `PLAN.md`.
+**IP policy:** All titles, character names, artwork, music, sound effects, and code must be
+completely original. Never incorporate third-party trademarks, copyrighted imagery, audio,
+or proprietary text. Art is generated with Gemini and music with Lyria in the Gemini app,
+both through the browser. See `PLAN.md`.
 
 `PLAN.md` holds the full design, asset pipeline and milestones. This file covers
 how to work in the repo and where it stands.
@@ -59,6 +60,14 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
   `STATE_VERSION` (`state.ts`) and add a migration in `save.ts`. It is currently
   v2, with a v1 migration.
 
+## Audio
+
+`src/ui/audio.ts`: `playMusic(scene, track)` crossfades between looping tracks,
+`sfx(scene, id)` plays an effect, and the mute toggle (🔊 button, or M) is
+remembered in localStorage. Sound effects are synthesised by `tools/assets/sfx.py`
+into `public/assets/sfx/`; music is processed by `tools/assets/music.py` (90 s
+loops with a crossfaded seam, stings trimmed) into `public/assets/music/`.
+
 ## Asset pipeline
 
 1. Prompts, sizes and processing modes live in `tools/assets/prompts.yaml`
@@ -106,20 +115,23 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
 | M5 Sword fight (raid + rescue), kidnap event | ✅ |
 | M6 Siege / catapult minigame | ✅ |
 | M7 Gemini asset pass | ✅ |
-| M8 Cutscenes, Lyria music, SFX, balancing | ⏳ next |
-| M9 Polish, controls, deploy | — |
+| M8 Cutscenes, Lyria music, SFX, balancing | ✅ |
+| M9 Polish, controls, deploy | ⏳ next |
 
-There are 115 tests, all passing.
+There are 117 tests, all passing.
 
 ### Known issues / deferred
-- Balance is off: the hero wins about 9% of simulated games, and the plan's
-  "no side >80%" target is not met yet. Proper balancing is deferred to M8.
-- A raid on a lord with no gold still "succeeds" and reports stealing 0 gold.
-- Rescue victories show only a dialog. The romance cutscene (and a lady's portrait)
-  is planned for M8; `CutsceneScene` takes an `image` key for its painting.
-- Rival lords have no portraits yet, and units have a single pose each (no
-  animation frames); M8/M9 can add them through the same pipeline.
+- Balance: the three Saxon home counties have income 7 (Normans were winning 83%
+  of simulated games). The AI-played hero now wins ~40%, Normans ~40%, Saxon
+  rivals ~20%, but games average ~90 months. The sim is chaotic: small rule changes
+  swing the results a lot, so rerun the balance test after any change.
+- Music: all 9 tracks exist. `playMusic` stays silent for any track missing from
+  `src/data/music.json`. When regenerating: Lyria makes one ~3-minute take per chat
+  and often fails in a long chat, so start a new chat per track; the take is a
+  `<video>` (mp4) whose src can be fetched and relayed as audio/mp4.
+- Units have a single pose each (no animation frames); M9 can add them.
 - The siege was tested in the browser by driving the scene from JS; the Attack
   button's routing to it and a full hold-and-release play by hand are untested.
 - Not yet tested by hand in the browser (the model tests cover these): bombard,
-  a won joust, jousting for land, the game-over defeat screen.
+  a won joust, jousting for land, a full game ending in defeat (the screen and its
+  music were checked by starting the scene directly).

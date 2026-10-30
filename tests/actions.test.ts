@@ -170,6 +170,15 @@ describe('raid', () => {
     expect(s.lords.player.gold).toBe(gold + 20);
   });
 
+  it('gains nothing from an empty treasury', () => {
+    const s = game();
+    s.lords.montclair.gold = 1;
+    const fame = s.lords.player.fame;
+    expect(applyRaid(s, 'player', 'montclair', true)).toBe(0);
+    expect(s.lords.player.fame).toBe(fame);
+    expect(s.log.at(-1)).toMatch(/treasury is empty/);
+  });
+
   it('costs a fifth of the soldiers on failure', () => {
     const s = game();
     s.lords.player.army.soldiers = 20;

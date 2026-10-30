@@ -10,6 +10,7 @@ import { MapScene } from './scenes/MapScene';
 import { SiegeScene } from './scenes/SiegeScene';
 import { SwordScene } from './scenes/SwordScene';
 import { TitleScene } from './scenes/TitleScene';
+import { setupMute } from './ui/audio';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -35,6 +36,8 @@ const game = new Phaser.Game({
     GameOverScene,
   ],
 });
+
+setupMute(game, document.getElementById('mute'));
 
 // Handy for poking at scenes from the browser console during development.
 if (import.meta.env.DEV) Object.assign(window, { game });

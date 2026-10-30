@@ -14,9 +14,9 @@ import { game } from './helpers';
 describe('economy', () => {
   it('sums income of owned territories', () => {
     const s = game();
-    expect(income(s, 'player')).toBe(4); // Lancaster
+    expect(income(s, 'player')).toBe(7); // Lancaster
     s.territories.york.owner = 'player';
-    expect(income(s, 'player')).toBe(10);
+    expect(income(s, 'player')).toBe(13);
   });
 
   it('charges upkeep for the campaign army', () => {

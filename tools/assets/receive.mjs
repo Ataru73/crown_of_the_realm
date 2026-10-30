@@ -1,7 +1,7 @@
-// Local receiver for images pulled out of the Gemini page during the asset pass.
+// Local receiver for images and music pulled out of the Gemini page during the asset pass.
 // Gemini's CSP blocks requests to localhost, so the Gemini tab opens this page
 // with window.open and postMessages { id, blob } to it; the page POSTs the bytes
-// to /<id> and they are saved as raw-assets/<id>.<ext>.
+// to /<id> and they are saved as raw-assets/<id>.<ext> (music in raw-assets/music/).
 // Run with: node tools/assets/receive.mjs
 import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -10,8 +10,11 @@ import { fileURLToPath } from 'node:url';
 
 const PORT = 5199;
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '../../raw-assets');
-const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
-mkdirSync(OUT, { recursive: true });
+const EXT = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
+  'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/ogg': 'ogg',
+};
+mkdirSync(join(OUT, 'music'), { recursive: true });
 
 const cors = {
   'Access-Control-Allow-Origin': 'https://gemini.google.com',
@@ -49,7 +52,8 @@ createServer((req, res) => {
   const chunks = [];
   req.on('data', (c) => chunks.push(c));
   req.on('end', () => {
-    const file = join(OUT, `${id}.${ext}`);
+    const dir = req.headers['content-type'].startsWith('audio/') ? join(OUT, 'music') : OUT;
+    const file = join(dir, `${id}.${ext}`);
     writeFileSync(file, Buffer.concat(chunks));
     console.log(`saved ${file}`);
     res.writeHead(200, cors).end(`${id}.${ext}`);

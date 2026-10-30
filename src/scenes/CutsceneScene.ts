@@ -1,14 +1,17 @@
 import Phaser from 'phaser';
 import { HEIGHT, SceneKeys, WIDTH, type SceneKey } from '../config';
 import { addBackdrop } from '../ui/assets';
+import { playMusic, type Track } from '../ui/audio';
 import { textStyle } from '../ui/theme';
 
-interface CutsceneData {
+export interface CutsceneData {
   text: string;
   next: SceneKey;
   nextData?: object;
   /** Texture key of the painting; the campaign intro by default. */
   image?: string;
+  /** Music for the scene; the title theme by default. */
+  music?: Track;
 }
 
 /** Full-screen painting + caption; click to continue. */
@@ -18,6 +21,7 @@ export class CutsceneScene extends Phaser.Scene {
   }
 
   create(data: CutsceneData): void {
+    playMusic(this, data.music ?? 'title', data.music !== 'victory');
     addBackdrop(this, data.image ?? 'intro');
     this.add.rectangle(0, HEIGHT - 84, WIDTH, 84, 0x000000, 0.65).setOrigin(0);
     this.add

@@ -1,15 +1,15 @@
 {
   "territories": [
-    { "id": "northumbria", "name": "Northumbria", "x": 255, "y": 50,  "income": 4 },
+    { "id": "northumbria", "name": "Northumbria", "x": 255, "y": 50,  "income": 7 },
     { "id": "cumbria",     "name": "Cumbria",     "x": 196, "y": 84,  "income": 3 },
     { "id": "york",        "name": "York",        "x": 275, "y": 115, "income": 6 },
-    { "id": "lancaster",   "name": "Lancaster",   "x": 205, "y": 140, "income": 4 },
+    { "id": "lancaster",   "name": "Lancaster",   "x": 205, "y": 140, "income": 7 },
     { "id": "lincoln",     "name": "Lincoln",     "x": 318, "y": 165, "income": 5 },
     { "id": "derby",       "name": "Derby",       "x": 250, "y": 170, "income": 5 },
     { "id": "chester",     "name": "Chester",     "x": 190, "y": 186, "income": 4 },
     { "id": "norfolk",     "name": "Norfolk",     "x": 378, "y": 200, "income": 6 },
     { "id": "leicester",   "name": "Leicester",   "x": 285, "y": 207, "income": 5 },
-    { "id": "hereford",    "name": "Hereford",    "x": 170, "y": 244, "income": 4 },
+    { "id": "hereford",    "name": "Hereford",    "x": 170, "y": 244, "income": 7 },
     { "id": "essex",       "name": "Essex",       "x": 345, "y": 247, "income": 7 },
     { "id": "oxford",      "name": "Oxford",      "x": 275, "y": 252, "income": 6 },
     { "id": "gloucester",  "name": "Gloucester",  "x": 222, "y": 258, "income": 5 },

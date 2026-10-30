@@ -63,6 +63,27 @@
     ]
   },
   {
+    "id": "kidnap",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "romance",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
+    "id": "castle_falls",
+    "size": [
+      640,
+      400
+    ]
+  },
+  {
     "id": "hero_edwin",
     "size": [
       96,
@@ -85,6 +106,41 @@
   },
   {
     "id": "hero_wulfric",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "lord_montclair",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "lord_osric",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "lord_vesci",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "lord_leofric",
+    "size": [
+      96,
+      80
+    ]
+  },
+  {
+    "id": "lord_aubigny",
     "size": [
       96,
       80

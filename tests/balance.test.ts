@@ -11,12 +11,13 @@ interface BalanceReport {
   lost: number;
   unfinished: number;
   averageMonths: number;
-  normanLordsLeftWhenLost: number;
+  /** Games lost to a Norman lord taking the hero's castle. */
+  lostToNormans: number;
 }
 
 /** Plays GAMES all-AI campaigns (the player's lord too) and tallies the outcomes. */
 function runBalance(): BalanceReport {
-  const report: BalanceReport = { won: 0, lost: 0, unfinished: 0, averageMonths: 0, normanLordsLeftWhenLost: 0 };
+  const report: BalanceReport = { won: 0, lost: 0, unfinished: 0, averageMonths: 0, lostToNormans: 0 };
   let months = 0;
   for (let seed = 1; seed <= GAMES; seed++) {
     const state: GameState = newGame(HEROES[seed % HEROES.length].id, seed);
@@ -25,9 +26,8 @@ function runBalance(): BalanceReport {
     if (state.status === 'won') report.won++;
     else if (state.status === 'lost') {
       report.lost++;
-      report.normanLordsLeftWhenLost += Object.values(state.lords).filter(
-        (l) => l.alive && l.faction === 'norman',
-      ).length;
+      const captor = state.territories[state.lords.player.home].owner;
+      if (captor && state.lords[captor].faction === 'norman') report.lostToNormans++;
     } else report.unfinished++;
   }
   report.averageMonths = Math.round(months / GAMES);
@@ -35,10 +35,10 @@ function runBalance(): BalanceReport {
 }
 
 /*
- * The player's lord is played by the same simple AI here, which plays far
- * worse than a person (it leaves its castle exposed), so it mostly loses.
- * These bounds guard against regressions: stalemates, Norman blitzes,
- * or a player who can never win. Last measured: 9 won, 91 lost, 35 months.
+ * The player's lord is played by the same simple AI here, which plays worse
+ * than a person (it leaves its castle exposed). These bounds guard against
+ * regressions: stalemates, Norman blitzes, or a player who can never win.
+ * Last measured: 41 won, 59 lost (39 to Normans, 20 to Saxon rivals), 92 months.
  */
 describe('balance', () => {
   const r = runBalance();
@@ -47,8 +47,13 @@ describe('balance', () => {
     expect(r.unfinished).toBe(0);
   });
 
-  it('gives the AI-played player some wins', () => {
-    expect(r.won / GAMES).toBeGreaterThanOrEqual(0.05);
+  it('gives the AI-played player a fair share of wins', () => {
+    expect(r.won / GAMES).toBeGreaterThanOrEqual(0.25);
+  });
+
+  it('lets no side win more than 80% of games', () => {
+    expect(r.lostToNormans / GAMES).toBeLessThanOrEqual(0.8);
+    expect(r.won / GAMES).toBeLessThanOrEqual(0.8);
   });
 
   it('lasts long enough for the player to act (two years on average)', () => {

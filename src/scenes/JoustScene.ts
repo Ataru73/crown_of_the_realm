@@ -18,6 +18,7 @@ import type { GameState, Lord, LordId } from '../model/types';
 import { Button } from '../ui/Button';
 import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
+import { playMusic, sfx, sfxLoop } from '../ui/audio';
 
 const HORIZON = 180;
 const VANISH = { x: 322, y: HORIZON };
@@ -68,6 +69,7 @@ export class JoustScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
   private keys?: Phaser.Types.Input.Keyboard.CursorKeys;
+  private hooves?: Phaser.Sound.BaseSound;
 
   constructor() {
     super(SceneKeys.Joust);
@@ -87,6 +89,8 @@ export class JoustScene extends Phaser.Scene {
     this.phase = 'ready';
     this.lastPass = null;
 
+    playMusic(this, 'tournament');
+    this.events.once('shutdown', () => this.hooves?.destroy());
     this.drawLists();
     this.knight = this.drawKnight(lordColor(this.opponent.id));
     this.lance = this.add.image(LANCE_BASE.x, LANCE_BASE.y, 'lance');
@@ -148,6 +152,7 @@ export class JoustScene extends Phaser.Scene {
     if (this.phase === 'ready') {
       this.phase = 'charging';
       this.messageText.setText('');
+      this.hooves = sfxLoop(this, 'gallop', 0.6);
     } else if (this.phase === 'result' && !this.joust.over) {
       this.phase = 'ready';
       this.resetPass();
@@ -209,6 +214,8 @@ export class JoustScene extends Phaser.Scene {
     recordPass(this.joust, mine, his);
     this.lastPass = { mine, his };
     this.updateStatus(this.joust.pass);
+    this.hooves?.destroy();
+    if (mine !== 'miss' || his !== 'miss') sfx(this, 'lance_hit', { volume: mine === 'unhorse' || his === 'unhorse' ? 1 : 0.6 });
 
     this.cameras.main.shake(his === 'unhorse' ? 400 : 150, his === 'unhorse' ? 0.02 : 0.006);
     if (his === 'unhorse') this.cameras.main.flash(250, 160, 30, 30);
@@ -240,6 +247,7 @@ export class JoustScene extends Phaser.Scene {
       .text(WIDTH / 2, 90, j.won ? 'Victory!' : 'Defeat', textStyle(34, '#ffe9a0', { stroke: '#000', strokeThickness: 6 }))
       .setOrigin(0.5);
     this.messageText.setText(verdict);
+    sfx(this, j.won ? 'cheer' : 'groan');
     new Button(this, WIDTH / 2, 362, 'Return to Map', () =>
       this.scene.start(SceneKeys.Map, {
         tournament: { opponent: this.opponent.id, stake: this.stake, won: j.won },

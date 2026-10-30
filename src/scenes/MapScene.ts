@@ -8,13 +8,15 @@ import { territoryDef } from '../model/map';
 import { currentLord } from '../model/state';
 import { dateLabel, playTurn } from '../model/turn';
 import type { BattleResult } from '../model/combat';
-import { RuleError, type Army, type GameState, type LordId, type TerritoryId } from '../model/types';
+import { RuleError, type Army, type GameState, type Kidnap, type Lord, type LordId, type TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
 import { openBuyDialog } from '../ui/BuyDialog';
 import { showDialog } from '../ui/Dialog';
 import { addBackdrop } from '../ui/assets';
 import { MapView } from '../ui/MapView';
 import { COLORS, textStyle } from '../ui/theme';
+import { playMusic, sfx } from '../ui/audio';
+import type { CutsceneData } from './CutsceneScene';
 
 const PANEL_X = 462;
 const PANEL_CENTER = PANEL_X + (WIDTH - PANEL_X) / 2;
@@ -46,6 +48,8 @@ export class MapScene extends Phaser.Scene {
   private infoText!: Phaser.GameObjects.Text;
   private logText!: Phaser.GameObjects.Text;
   private logBack!: Phaser.GameObjects.Rectangle;
+  private portrait!: Phaser.GameObjects.Image;
+  private portraitFrame!: Phaser.GameObjects.Rectangle;
   private buttons!: Record<'buy' | 'march' | 'attack' | 'raid' | 'rescue' | 'joustFame' | 'joustLand' | 'pass', Button>;
 
   constructor() {
@@ -62,9 +66,13 @@ export class MapScene extends Phaser.Scene {
     this.selected = null;
     this.busy = false;
 
+    playMusic(this, 'campaign');
     addBackdrop(this, 'map');
     this.map = new MapView(this, (id) => this.select(id));
     this.buildPanel();
+    // The selected rival's portrait sits over the Channel in the map's bottom-right corner.
+    this.portrait = this.add.image(PANEL_X - 4, HEIGHT - 4, '__DEFAULT').setOrigin(1).setVisible(false);
+    this.portraitFrame = this.add.rectangle(PANEL_X - 4, HEIGHT - 4, 96, 80).setOrigin(1).setStrokeStyle(2, COLORS.border).setVisible(false);
     // The chronicle sits over the open sea in the map's top-left corner.
     this.logBack = this.add.rectangle(4, 4, LOG_WIDTH + 8, 0, 0x000000, 0.55).setOrigin(0);
     this.logText = this.add.text(8, 7, '', textStyle(10, '#f4e4bc', { lineSpacing: 1, wordWrap: { width: LOG_WIDTH } }));
@@ -139,9 +147,14 @@ export class MapScene extends Phaser.Scene {
       `Camped at ${territoryDef(p.armyAt).name}`,
     ].join('\n'));
 
-    this.infoText.setText(this.selectionInfo());
-    const turn = this.isPlayerTurn();
     const rival = this.selectedRival();
+    this.infoText.setText(this.selectionInfo());
+    const portraitKey = rival ? `lord_${rival.id}` : null;
+    const showPortrait = !!portraitKey && this.textures.exists(portraitKey);
+    if (showPortrait) this.portrait.setTexture(portraitKey);
+    this.portrait.setVisible(showPortrait);
+    this.portraitFrame.setVisible(showPortrait);
+    const turn = this.isPlayerTurn();
     const name = this.selected ? territoryDef(this.selected).name : '';
     const canMarch = turn && !!this.selected && marchableTerritories(s, p.id).includes(this.selected);
     this.buttons.buy.setEnabled(turn);
@@ -218,6 +231,9 @@ export class MapScene extends Phaser.Scene {
   private act(action: Action): void {
     if (!this.isPlayerTurn()) return;
     const armyBefore = { ...this.player.army };
+    const kidnap = this.state.kidnap;
+    const target = action.type === 'conquer' ? this.state.territories[action.target] : null;
+    const besieged = target?.owner && this.state.lords[target.owner].home === target.id ? this.state.lords[target.owner] : null;
     let result;
     try {
       result = playTurn(this.state, action);
@@ -237,7 +253,35 @@ export class MapScene extends Phaser.Scene {
     }
     const title =
       action.type === 'pass' || action.type === 'march' ? 'The Month Passes' : result.won ? 'Victory!' : 'Defeat';
-    showDialog(this, title, lines.join('\n'), [{ label: 'Continue', onClick: () => void this.runAiTurns() }]);
+    const story = this.storyBeat(action, result.won ?? false, kidnap, besieged);
+    showDialog(this, title, lines.join('\n'), [
+      {
+        label: 'Continue',
+        onClick: () => (story ? this.scene.start(SceneKeys.Cutscene, story) : void this.runAiTurns()),
+      },
+    ]);
+  }
+
+  /** The cutscene that follows a rescue or the fall of a rival's castle, if any. */
+  private storyBeat(action: Action, won: boolean, kidnap: Kidnap | null, besieged: Lord | null): CutsceneData | null {
+    if (!won || this.state.status !== 'playing') return null;
+    const hero = this.player.name;
+    if (action.type === 'rescue' && kidnap) {
+      const text =
+        this.state.wife === kidnap.lady
+          ? `${kidnap.lady} gives her hand to ${hero}. By the next full moon they are wed.`
+          : `${kidnap.lady} thanks ${hero} with all her heart, and returns to her family.`;
+      return { image: 'romance', text, music: 'romance', next: SceneKeys.Map };
+    }
+    if (action.type === 'conquer' && besieged) {
+      return {
+        image: 'castle_falls',
+        text: `The banner of ${besieged.name} is torn down. His castle is yours.`,
+        music: 'victory',
+        next: SceneKeys.Map,
+      };
+    }
+    return null;
   }
 
   private wait(ms: number): Promise<void> {
@@ -263,12 +307,13 @@ export class MapScene extends Phaser.Scene {
     this.refresh();
     const k = this.state.kidnap;
     if (k && k !== kidnapBefore) {
-      showDialog(
-        this,
-        'A Lady Is Taken!',
-        `${this.state.lords[k.captor].name} has carried off ${k.lady} to his castle.\nRescue her before he forces her to wed him.`,
-        [{ label: 'To Arms' }],
-      );
+      sfx(this, 'horn');
+      this.scene.start(SceneKeys.Cutscene, {
+        image: 'kidnap',
+        text: `${this.state.lords[k.captor].name} has carried off ${k.lady} to his castle! Rescue her before he forces her to wed him.`,
+        music: 'swordfight',
+        next: SceneKeys.Map,
+      } satisfies CutsceneData);
     }
   }
 

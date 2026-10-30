@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { HEIGHT, SceneKeys, WIDTH } from '../config';
 import { loadAssets } from '../ui/assets';
+import { loadAudio } from '../ui/audio';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,6 +13,7 @@ export class BootScene extends Phaser.Scene {
     this.add.rectangle(WIDTH / 2, HEIGHT / 2, 304, 12).setStrokeStyle(1, 0x8a6a3a);
     this.load.on('progress', (p: number) => bar.setSize(300 * p, 8));
     loadAssets(this);
+    loadAudio(this);
   }
 
   create(): void {

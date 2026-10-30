@@ -1,13 +1,13 @@
-# Plan: a "Defender of the Crown" clone
+# Plan: Crown of the Realm
 
-A browser remake of Cinemaware's 1986 strategy/action game: Saxon lords fight Normans
-and each other for control of medieval England. A turn-based campaign map with
-short arcade minigames in between (jousting, sword fights, sieges, rescuing a lady).
+A browser strategy and action game set in medieval England, inspired by 1980s retro classics:
+Saxon lords fight Normans and each other for control of England on a turn-based campaign
+map with short arcade minigames in between (jousting, sword fights, sieges, rescuing a lady).
 
-> **Name & IP:** "Defender of the Crown" is still a trademark, and the original art and
-> music are copyrighted. The clone gets its own working title (e.g. **"Crown of the
-> Realm"**) and only original assets: Gemini-generated art, our own audio. Mechanics
-> are fair game; names, images and music are not.
+> **Intellectual Property & Originality:** *Crown of the Realm* is an independent, original work.
+> All title branding, character names, visual art, music, audio, and code are created specifically
+> for this project. No proprietary trademarks, copyrighted artwork, audio recordings, or proprietary
+> assets from any third-party classic titles are used.
 
 ---
 
@@ -26,7 +26,7 @@ short arcade minigames in between (jousting, sword fights, sieges, rescuing a la
 Target resolution: **640×400 logical** (2× the Amiga's 320×200), scaled with
 `pixelArt: true` / integer scaling, so the art keeps the painted-but-crisp look.
 
-## 2. Game design (what we're cloning)
+## 2. Game design
 
 ### Campaign
 - **Map of England** split into ~18 territories, each with a yearly income and a
@@ -108,7 +108,7 @@ simple result object (`{ outcome: 'win', goldStolen: 120 }`) back to `MapScene`.
 
 ### Workflow
 1. **Style sheet first.** Settle one prompt preamble and reuse it everywhere, e.g.
-   *"16-bit Amiga-era painted game art, 1986 Cinemaware style, rich oil-painting
+   *"16-bit Amiga-era painted game art, late-1980s adventure game style, rich oil-painting
    colors, dramatic lighting, medieval England, no text, no watermark"*. Generate
    2–3 test images, pick the look, then lock it.
 2. **Generate in Chrome:** open gemini.google.com with the browser tools, submit each
@@ -131,8 +131,8 @@ flash) instead of many frames.
 ### Audio
 
 **Music: Lyria in the Gemini app** (via the browser, like the images). One style
-preamble for every track, e.g. *"medieval orchestral game music, 1986 Amiga
-Cinemaware mood, lute, recorder, horns and timpani, loopable, no vocals"*.
+preamble for every track, e.g. *"medieval orchestral game music, late-1980s 16-bit
+retro style, lute, recorder, horns and timpani, loopable, no vocals"*.
 
 | Track | Used in | Mood |
 |---|---|---|
@@ -191,7 +191,7 @@ and sizes.
   scene for the review.
 
 ## 7. Open decisions
-1. Title for the clone (needed before title-screen art).
+1. Game title settled: "Crown of the Realm".
 2. Faithful (one action per turn, harsh randomness) vs. modernized (tooltips, undo,
    difficulty settings).
 3. Gemini access: which Google account in Chrome, and image limits per day — sets

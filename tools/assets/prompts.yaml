@@ -110,6 +110,33 @@ assets:
       on its walls, smoke against a dark red sky, a broken shield and sword lying in the
       mud in the foreground.
 
+  - id: kidnap
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Story painting: at night under a full moon, Norman horsemen in conical helmets and
+      dark red cloaks gallop away from a burning Saxon manor, one of them holding a young
+      Saxon lady in a pale blue gown across his saddle, her arm reaching back.
+
+  - id: romance
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Story painting: a candlelit castle chamber with tapestries and a tall arched window
+      showing a starry sky. A young Saxon lady with long golden braids in a pale blue gown
+      and a Saxon lord in a blue cloak hold hands and gaze at each other tenderly.
+
+  - id: castle_falls
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Story painting: a conquered stone castle at sunset, smoke rising from a breach in its
+      walls. Saxon soldiers on the battlements tear down a red Norman banner while a blue
+      Saxon banner is raised above the keep. Cheering spearmen below.
+
   # --- Hero portraits --------------------------------------------------------
   - id: hero_edwin
     kind: bg
@@ -146,6 +173,42 @@ assets:
       Head-and-shoulders portrait of a grizzled old Saxon veteran with a long grey beard
       and braids, weathered face, fur-trimmed cloak over chain mail, dark neutral
       background.
+
+  # --- Rival lord portraits --------------------------------------------------
+  - id: lord_montclair
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a stern Norman baron in his fifties, clean-shaven with close-cropped grey hair, cold eyes, chain mail and a deep red surcoat, a conical steel helmet under his arm, dark neutral background.
+
+  - id: lord_osric
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a proud young Saxon lord from the far north, long red hair and a braided beard, fur-trimmed green cloak over chain mail, dark neutral background.
+
+  - id: lord_vesci
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a sly Norman count in his thirties, black hair cut in the Norman fashion, thin moustache, rich purple tunic with gold embroidery, dark neutral background.
+
+  - id: lord_leofric
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of an old Saxon lord with a long white beard and a weathered face, brown wool cloak and a silver torc, dark neutral background.
+
+  - id: lord_aubigny
+    kind: bg
+    size: [96, 80]
+    aspect: square 1:1
+    prompt: >-
+      Head-and-shoulders portrait of a broad-shouldered Norman lord, shaven head, scarred cheek, chain mail and a black surcoat with a gold trim, dark neutral background.
 
   # --- Sprites ---------------------------------------------------------------
   - id: joust_knight

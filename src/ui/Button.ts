@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { addParchment } from './assets';
 import { textStyle } from './theme';
+import { sfx } from './audio';
 
 export interface ButtonOptions {
   width?: number;
@@ -36,7 +37,10 @@ export class Button extends Phaser.GameObjects.Container {
     this.setInteractive({ useHandCursor: true })
       .on('pointerover', () => this.bg.setTint(HOVER))
       .on('pointerout', () => this.bg.clearTint())
-      .on(onPress ? 'pointerdown' : 'pointerup', onClick);
+      .on(onPress ? 'pointerdown' : 'pointerup', () => {
+        if (!onPress) sfx(scene, 'click', { volume: 0.4 });
+        onClick();
+      });
     scene.add.existing(this);
   }
 

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { HEIGHT, SceneKeys, WIDTH } from '../config';
 import { addButton } from '../ui/Button';
 import { drawPainting } from '../ui/assets';
+import { playMusic } from '../ui/audio';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -9,6 +10,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(data: { won: boolean }): void {
+    playMusic(this, data.won ? 'victory' : 'defeat', false);
     if (data.won) {
       drawPainting(this, 'victory', 'Long Live the King!', 'England is united under your crown.');
     } else {

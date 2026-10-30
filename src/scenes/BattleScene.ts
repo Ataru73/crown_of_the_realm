@@ -21,6 +21,7 @@ import type { Army, GameState, TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
 import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
+import { playMusic, sfx } from '../ui/audio';
 
 const GROUND_Y = 170;
 const TACTIC_LABELS: Record<Tactic, string> = {
@@ -69,6 +70,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.state = session.state;
     this.target = data.target;
+    playMusic(this, 'battle');
     const player = playerLord(this.state);
     const input = battleInput(this.state, player.id, this.target);
     this.battle = startBattle(data.siege ? applySiege(input, data.siege) : input);
@@ -179,7 +181,11 @@ export class BattleScene extends Phaser.Scene {
     if (this.battle.over) return;
     const r = withRng(this.state, (rng) => fightRound(this.battle, tactic, rng));
     this.report(r);
-    if (tactic !== 'retreat') this.cameras.main.shake(120, 0.004);
+    if (tactic !== 'retreat') {
+      this.cameras.main.shake(120, 0.004);
+      sfx(this, tactic === 'bombard' ? 'impact' : 'drum');
+      if (tactic !== 'bombard') sfx(this, 'sword_clash', { volume: 0.3, delay: 0.1 });
+    }
     this.redraw();
     if (this.battle.over) this.finish();
   }
@@ -197,6 +203,7 @@ export class BattleScene extends Phaser.Scene {
     const b = this.battle;
     for (const button of Object.values(this.buttons)) button?.setVisible(false);
     this.hintText.setText('');
+    sfx(this, b.attackerWon ? 'horn' : 'groan');
     const title = b.attackerWon ? 'Victory!' : strength(b.attacker) > 0 ? 'You Fall Back' : 'Your Army Is Destroyed';
     this.add
       .text(WIDTH / 2, 120, title, textStyle(34, '#ffe9a0', { stroke: '#000', strokeThickness: 6 }))

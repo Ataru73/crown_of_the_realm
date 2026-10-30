@@ -31,6 +31,7 @@ import type { GameState, TerritoryId } from '../model/types';
 import { Button } from '../ui/Button';
 import { addBackdrop, addTinted } from '../ui/assets';
 import { lordColor, textStyle } from '../ui/theme';
+import { playMusic, sfx } from '../ui/audio';
 
 const GROUND_Y = 318;
 const CATAPULT_X = 56;
@@ -76,6 +77,7 @@ export class SiegeScene extends Phaser.Scene {
       return;
     }
     this.state = session.state;
+    playMusic(this, 'siege');
     this.target = data.target;
     const player = playerLord(this.state);
     this.siege = withRng(this.state, (rng) => startSiege(player.army.catapults, rng));
@@ -326,31 +328,38 @@ export class SiegeScene extends Phaser.Scene {
     const at = s.shot ?? { x: 0, y: 0 };
     switch (e.type) {
       case 'launch':
+        sfx(this, 'catapult');
         this.say(e.ammo === 'fire' ? 'A fire pot arcs toward the castle...' : 'The stone flies...');
         break;
       case 'wall':
         if (e.ammo === 'fire') {
+          sfx(this, 'fire', { volume: 0.5 });
           this.flames(at.x);
           this.say('The fire pot bursts on the stones, harmlessly. Throw it over the wall!');
         } else if (e.collapsed) {
+          sfx(this, 'impact');
           this.cameras.main.shake(400, 0.012);
           this.puff(at.x, at.y, 0x9a9488, 14, 9);
           this.say(standingRows(s) === 0 ? 'The wall comes crashing down: a clear breach!' : 'A section of the wall collapses!');
         } else {
+          sfx(this, 'impact', { volume: 0.5, rate: 1.3 });
           this.cameras.main.shake(150, 0.005);
           this.puff(at.x, at.y, 0xb0a898);
           this.say(e.row === 0 ? 'A hit at the footing! It shudders.' : 'A hit! Stones crack and tumble.');
         }
         break;
       case 'short':
+        sfx(this, 'impact', { volume: 0.3, rate: 1.5 });
         this.puff(at.x, 0, 0x8a7a5a);
         this.say('Short! Throw harder or higher.');
         break;
       case 'yard':
         if (e.ammo === 'fire') {
+          sfx(this, 'fire');
           this.flames(at.x);
           this.say('The bailey is ablaze! Defenders burn.');
         } else {
+          sfx(this, 'impact', { volume: 0.3, rate: 1.5 });
           this.puff(at.x, 0, 0x8a7a5a);
           this.say('Over the wall: the stone does little in the bailey.');
         }
@@ -368,6 +377,7 @@ export class SiegeScene extends Phaser.Scene {
     this.finished = true;
     this.controls.forEach((b) => b.destroy());
     const result = siegeResult(this.siege);
+    sfx(this, 'horn');
     const pct = Math.round(result.wallDamage * 100);
     this.add
       .text(WIDTH / 2, 110, 'To the Assault!', textStyle(30, '#ffe9a0', { stroke: '#000', strokeThickness: 6 }))

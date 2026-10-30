@@ -6,6 +6,7 @@ import { HEROES, newGame, type Hero } from '../model/setup';
 import { playerLord } from '../model/state';
 import { addParchment, drawPainting } from '../ui/assets';
 import { COLORS, textStyle } from '../ui/theme';
+import { playMusic } from '../ui/audio';
 
 const CARD_W = 140;
 const CARD_H = 190;
@@ -20,6 +21,7 @@ export class HeroSelectScene extends Phaser.Scene {
   }
 
   create(): void {
+    playMusic(this, 'title');
     drawPainting(this, 'title', 'Choose Your Hero', 'Each Saxon lord has different strengths.', 0.45);
     const gap = (WIDTH - CARD_W * HEROES.length) / (HEROES.length + 1);
     HEROES.forEach((hero, i) => this.addCard(hero, gap + CARD_W / 2 + i * (CARD_W + gap), 220));

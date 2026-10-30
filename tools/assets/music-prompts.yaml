@@ -1,0 +1,52 @@
+# Music prompts for Lyria in the Gemini app. Each prompt is sent as
+#   "Create music: <style> <prompt>"
+# and the chosen take is saved as raw-assets/music/<id>.<ext>, then processed by
+# music.py (loop crossfade, loudness normalisation, .ogg + .mp3).
+#
+# loop: true   the track repeats in game; music.py crossfades its ends
+# loop: false  a short sting, played once; music.py trims it to `seconds` and fades out
+
+style: >-
+  Instrumental medieval orchestral game music in the mood of late-1980s Amiga adventure
+  games: lute, recorder, horns, strings and timpani. No vocals, no singing.
+
+tracks:
+  - id: title
+    loop: true
+    prompt: Heroic, noble main theme with a soaring horn melody over strings and timpani.
+
+  - id: campaign
+    loop: true
+    prompt: >-
+      Calm, stately and reflective; a slow lute and recorder melody with soft strings,
+      for studying a map of the kingdom.
+
+  - id: tournament
+    loop: true
+    prompt: Festive brass fanfare and drums for a jousting tournament, bright and proud.
+
+  - id: battle
+    loop: true
+    prompt: Urgent war drums and low brass, driving rhythm, a field battle about to break.
+
+  - id: siege
+    loop: true
+    prompt: Heavy, slow, ominous percussion and low strings for a castle siege.
+
+  - id: swordfight
+    loop: true
+    prompt: Fast, tense staccato strings and taiko-like drums for a sword fight in a castle.
+
+  - id: romance
+    loop: true
+    prompt: Gentle, tender lute and harp duet with a soft recorder, a love theme.
+
+  - id: victory
+    loop: false
+    seconds: 10
+    prompt: A short triumphant fanfare of horns and timpani, ending on a major chord.
+
+  - id: defeat
+    loop: false
+    seconds: 10
+    prompt: A short, sorrowful lament on low strings and a solo horn, ending quietly.
