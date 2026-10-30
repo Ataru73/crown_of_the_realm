@@ -213,14 +213,28 @@ def process_render(asset: dict, colors: int) -> list[dict]:
     in anchors.json move with them into the manifest."""
     src = RAW / asset["id"]
     anchors = json.loads((src / "anchors.json").read_text())
-    scale, cutoff = asset["scale"], asset.get("alpha_cutoff", 128)
+    cutoff = asset.get("alpha_cutoff", 128)
+
+    raw_images = [np.asarray(Image.open(src / f"{i}.png").convert("RGBA")) for i in range(len(anchors["frames"]))]
+
+    if "scale" in asset:
+        scale = asset["scale"]
+    elif "height" in asset:
+        solid_raw = np.zeros(raw_images[0].shape[:2], bool)
+        for rgba in raw_images:
+            solid_raw |= rgba[..., 3] >= cutoff
+        ys = np.nonzero(solid_raw)[0]
+        raw_h = int(ys.max()) + 1 - int(ys.min()) if len(ys) > 0 else raw_images[0].shape[0]
+        scale = raw_h / asset["height"]
+    else:
+        raise ValueError(f"{asset['id']}: render requires either 'scale' or 'height'")
+
     frames = []
-    for i in range(len(anchors["frames"])):
-        rgba = np.asarray(Image.open(src / f"{i}.png").convert("RGBA"))
+    for rgba in raw_images:
         tint = None
-        if asset.get("tint"):
+        if asset.get("tint", False):
             rgba, tint = split_tint(rgba)
-        h, w = rgba.shape[0] // scale, rgba.shape[1] // scale
+        h, w = round(rgba.shape[0] / scale), round(rgba.shape[1] / scale)
         frames.append([fit_sprite(layer, h) if layer is not None else None for layer in (rgba, tint)])
         assert frames[-1][0].width == w
     # One box around every frame's solid pixels.
