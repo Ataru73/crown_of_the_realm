@@ -116,14 +116,15 @@ loops with a crossfaded seam, stings trimmed) into `public/assets/music/`.
   `window.game`, and model modules can be loaded with `await import('/src/model/...')`.
   The tab is throttled to about 6 fps when it is in the background, so wait
   generously.
-- Commits: one per milestone, with messages like `M5: ...`, on `main`. There is
-  no remote yet.
+- Commits: one per milestone, with messages like `M5: ...`, on `main`, pushed to
+  `origin` (github.com/Ataru73/crown_of_the_realm).
 
 ## Deploy
 
 `.github/workflows/deploy.yml` runs the tests, builds and publishes `dist/` to
-GitHub Pages on push to `main`. The repo has no remote yet; once it's on GitHub,
-set Pages > Source to "GitHub Actions".
+GitHub Pages on every push to `main` (the repo's Pages > Source must be set to
+"GitHub Actions"). `wrangler.jsonc` also lets `wrangler deploy` serve `dist/` as
+static assets on Cloudflare Workers.
 
 ## Status (October 2026)
 
@@ -138,7 +139,7 @@ set Pages > Source to "GitHub Actions".
 | M6 Siege / catapult minigame | ✅ |
 | M7 Gemini asset pass | ✅ |
 | M8 Cutscenes, Lyria music, SFX, balancing | ✅ |
-| M9 Polish, controls, deploy | ✅ (hosting needs a remote) |
+| M9 Polish, controls, deploy | ✅ |
 
 There are 124 tests, all passing.
 
