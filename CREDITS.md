@@ -9,3 +9,7 @@ palette-reduced by `tools/assets/process.py`.
 ## Music and sound
 
 None yet (planned for M8: music from Lyria in the Gemini app, CC0 sound effects).
+
+## Code
+
+Built with [Phaser 3](https://phaser.io) (© Phaser Studio Inc., MIT licence).
