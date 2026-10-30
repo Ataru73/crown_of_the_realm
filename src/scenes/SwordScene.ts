@@ -303,7 +303,7 @@ export class SwordScene extends Phaser.Scene {
         this.scene.start(SceneKeys.Map, this.mission.mission === 'raid'
           ? { raid: { target: this.mission.target, won } }
           : { rescue: { won } }),
-      );
+      { keys: ['ENTER', 'SPACE'] });
     });
   }
 }

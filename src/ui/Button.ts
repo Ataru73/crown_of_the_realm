@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { addParchment } from './assets';
 import { textStyle } from './theme';
 import { sfx } from './audio';
+import { inFrontmostLayer, onKeys } from './modal';
 
 export interface ButtonOptions {
   width?: number;
@@ -9,6 +10,10 @@ export interface ButtonOptions {
   fontSize?: number;
   /** Fire on press instead of release, for timing-critical controls. */
   onPress?: boolean;
+  /** Phaser key names (`ENTER`, `ONE`, `B`) that also click the button. */
+  keys?: string[];
+  /** The key to show in the button's left corner, if any. */
+  keyLabel?: string;
 }
 
 /** Warm highlight multiplied over the parchment while hovered. */
@@ -26,13 +31,16 @@ export class Button extends Phaser.GameObjects.Container {
     y: number,
     label: string,
     onClick: () => void,
-    { width = 180, height = 28, fontSize = 15, onPress = false }: ButtonOptions = {},
+    { width = 180, height = 28, fontSize = 15, onPress = false, keys = [], keyLabel }: ButtonOptions = {},
   ) {
     super(scene, x, y);
     const { fill, frame } = addParchment(scene, 0, 0, width, height);
     this.bg = fill;
     this.label = scene.add.text(0, 0, label, textStyle(fontSize)).setOrigin(0.5);
     this.add([fill, frame, this.label]);
+    if (keyLabel) {
+      this.add(scene.add.text(-width / 2 + 5, 0, keyLabel, textStyle(Math.max(9, fontSize - 3), '#8a6a4a')).setOrigin(0, 0.5));
+    }
     this.setSize(width, height);
     this.setInteractive({ useHandCursor: true })
       .on('pointerover', () => this.bg.setTint(HOVER))
@@ -41,6 +49,12 @@ export class Button extends Phaser.GameObjects.Container {
         if (!onPress) sfx(scene, 'click', { volume: 0.4 });
         onClick();
       });
+    onKeys(scene, keys, () => {
+      if (this.enabled && this.visible && this.active && inFrontmostLayer(this)) {
+        sfx(scene, 'click', { volume: 0.4 });
+        onClick();
+      }
+    }, this);
     scene.add.existing(this);
   }
 

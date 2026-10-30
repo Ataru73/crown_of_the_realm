@@ -5,6 +5,7 @@ import { territoryDef } from '../model/map';
 import { HEROES, newGame, type Hero } from '../model/setup';
 import { playerLord } from '../model/state';
 import { addParchment, drawPainting } from '../ui/assets';
+import { onKeys } from '../ui/modal';
 import { COLORS, textStyle } from '../ui/theme';
 import { playMusic } from '../ui/audio';
 
@@ -22,12 +23,16 @@ export class HeroSelectScene extends Phaser.Scene {
 
   create(): void {
     playMusic(this, 'title');
-    drawPainting(this, 'title', 'Choose Your Hero', 'Each Saxon lord has different strengths.', 0.45);
+    drawPainting(this, 'title', 'Choose Your Hero', 'Each Saxon lord has different strengths. Click one, or press 1 to 4.', 0.45);
     const gap = (WIDTH - CARD_W * HEROES.length) / (HEROES.length + 1);
-    HEROES.forEach((hero, i) => this.addCard(hero, gap + CARD_W / 2 + i * (CARD_W + gap), 220));
+    HEROES.forEach((hero, i) => {
+      this.addCard(hero, i + 1, gap + CARD_W / 2 + i * (CARD_W + gap), 220);
+      const digit = ['ONE', 'TWO', 'THREE', 'FOUR'][i];
+      onKeys(this, [digit, `NUMPAD_${digit}`], () => this.choose(hero));
+    });
   }
 
-  private addCard(hero: Hero, x: number, y: number): void {
+  private addCard(hero: Hero, number: number, x: number, y: number): void {
     const { fill: bg, frame } = addParchment(this, 0, 0, CARD_W, CARD_H);
     const portrait = this.add.image(0, -47, `hero_${hero.id}`);
     const portraitFrame = this.add.rectangle(0, -47, portrait.width, portrait.height).setStrokeStyle(2, COLORS.border);
@@ -47,8 +52,10 @@ export class HeroSelectScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0);
 
+    const key = this.add.text(-CARD_W / 2 + 6, -CARD_H / 2 + 4, String(number), textStyle(11, '#8a6a4a'));
+
     this.add
-      .container(x, y, [bg, frame, portrait, portraitFrame, name, stats])
+      .container(x, y, [bg, frame, portrait, portraitFrame, name, stats, key])
       .setSize(CARD_W, CARD_H)
       .setInteractive({ useHandCursor: true })
       .on('pointerover', () => frame.setStrokeStyle(3, COLORS.selected))

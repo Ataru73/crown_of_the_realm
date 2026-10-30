@@ -7,6 +7,7 @@ import { Button } from './Button';
 import { addParchment } from './assets';
 import { textStyle } from './theme';
 import { sfx } from './audio';
+import { pushModal } from './modal';
 
 const DEPTH = 100;
 
@@ -24,7 +25,8 @@ const ROWS: Row[] = [
 
 /**
  * Lets the lord spend gold on troops (and a castle on the selected territory).
- * Purchases happen immediately and don't use up the turn.
+ * Purchases happen immediately and don't use up the turn. Keys 1 to 5 press
+ * the + buttons in order, C builds the castle and Enter closes.
  */
 export function openBuyDialog(
   scene: Phaser.Scene,
@@ -39,6 +41,7 @@ export function openBuyDialog(
   const title = scene.add.text(0, -128, 'Muster the Army', textStyle(20)).setOrigin(0.5);
   const goldText = scene.add.text(0, -102, '', textStyle(13)).setOrigin(0.5);
   const container = scene.add.container(WIDTH / 2, HEIGHT / 2, [fill, frame, title, goldText]).setDepth(DEPTH + 1);
+  pushModal(scene, container);
 
   const updaters: (() => void)[] = [];
   const refreshAll = () => updaters.forEach((u) => u());
@@ -50,6 +53,8 @@ export function openBuyDialog(
     ),
   );
 
+  const digits = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
+  let n = 0;
   ROWS.forEach((row, i) => {
     const y = -65 + i * 38;
     const label = scene.add.text(-195, y, '', textStyle(14)).setOrigin(0, 0.5);
@@ -62,7 +67,7 @@ export function openBuyDialog(
         buy(state, lordId, row.unit, qty);
         sfx(scene, 'coins', { volume: 0.5 });
         refreshAll();
-      }, small);
+      }, { ...small, keys: [digits[n++]] });
       container.add(button);
       updaters.push(() => button.setEnabled(lord.gold >= PRICES[row.unit] * qty));
     });
@@ -76,7 +81,7 @@ export function openBuyDialog(
       sfx(scene, 'coins', { volume: 0.5 });
     }
     refreshAll();
-  }, { ...small, width: 100 });
+  }, { ...small, width: 100, keys: ['C'], keyLabel: 'C' });
   container.add([castleLabel, castleButton]);
   updaters.push(() => {
     const territory = selected ? state.territories[selected] : null;
@@ -90,13 +95,13 @@ export function openBuyDialog(
   });
 
   const note = scene.add
-    .text(0, 82, 'Upkeep above income makes soldiers desert.', textStyle(11, '#6a4a2a'))
+    .text(0, 84, 'Upkeep above income makes soldiers desert.\nKeys: 1 to 5 buy, in order · C builds · Enter is done', textStyle(11, '#6a4a2a', { align: 'center' }))
     .setOrigin(0.5);
   const done = new Button(scene, 0, 120, 'Done', () => {
     container.destroy();
     blocker.destroy();
     onClose();
-  }, { width: 130, fontSize: 14 });
+  }, { width: 130, fontSize: 14, keys: ['ENTER', 'B'] });
   container.add([note, done]);
 
   refreshAll();

@@ -387,7 +387,7 @@ export class SiegeScene extends Phaser.Scene {
     this.time.delayedCall(500, () => {
       new Button(this, WIDTH / 2, 362, 'Storm the Castle', () =>
         this.scene.start(SceneKeys.Battle, { target: this.target, siege: result }),
-      );
+      { keys: ['ENTER', 'SPACE'] });
     });
   }
 }

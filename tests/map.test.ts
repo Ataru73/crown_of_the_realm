@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areAdjacent, BORDERS, neighbours, TERRITORIES } from '../src/model/map';
+import { areAdjacent, BORDERS, neighbours, territoryInDirection, TERRITORIES } from '../src/model/map';
 
 describe('map', () => {
   const ids = TERRITORIES.map((t) => t.id);
@@ -46,5 +46,29 @@ describe('map', () => {
       }
     }
     expect(reached.size).toBe(ids.length);
+  });
+
+  it('steps to the nearest territory in an arrow direction', () => {
+    expect(territoryInDirection('oxford', -1, 0)).toBe('gloucester');
+    expect(territoryInDirection('oxford', 1, 0)).toBe('essex');
+    expect(territoryInDirection('oxford', 0, -1)).toBe('leicester');
+    expect(territoryInDirection('oxford', 0, 1)).toBe('sussex');
+    expect(territoryInDirection('northumbria', 0, -1)).toBeNull();
+  });
+
+  it('can reach every territory with the arrow keys', () => {
+    const seen = new Set(['oxford']);
+    const queue = ['oxford'];
+    while (queue.length) {
+      const from = queue.shift()!;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const to = territoryInDirection(from, dx, dy);
+        if (to && !seen.has(to)) {
+          seen.add(to);
+          queue.push(to);
+        }
+      }
+    }
+    expect(seen.size).toBe(ids.length);
   });
 });

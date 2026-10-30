@@ -45,6 +45,9 @@ function describeLosses(a: Army): string {
 }
 
 /** The attacker picks a tactic each round until one side breaks. */
+/** Keys 1 to 5 pick the tactics. */
+const DIGITS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
+
 export class BattleScene extends Phaser.Scene {
   private state!: GameState;
   private target!: TerritoryId;
@@ -117,7 +120,11 @@ export class BattleScene extends Phaser.Scene {
     all.forEach((t, i) => {
       const x = WIDTH / 2 + (i - 2) * 120;
       const label = t === 'auto' ? 'Auto-resolve' : TACTIC_LABELS[t];
-      const button = new Button(this, x, 362, label, () => (t === 'auto' ? this.autoResolve() : this.play(t)), opts);
+      const button = new Button(this, x, 362, label, () => (t === 'auto' ? this.autoResolve() : this.play(t)), {
+        ...opts,
+        keys: [DIGITS[i], `NUMPAD_${DIGITS[i]}`],
+        keyLabel: String(i + 1),
+      });
       button.on('pointerover', () =>
         this.hintText.setText(t === 'auto' ? 'Let your captains fight it out.' : TACTIC_HINTS[t]),
       );
@@ -211,6 +218,6 @@ export class BattleScene extends Phaser.Scene {
     if (note) this.reportText.setText(note);
     new Button(this, WIDTH / 2, 362, 'Return to Map', () =>
       this.scene.start(SceneKeys.Map, { conquest: { target: this.target, result: battleResult(b) } }),
-    );
+    { keys: ['ENTER', 'SPACE'] });
   }
 }

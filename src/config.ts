@@ -13,6 +13,7 @@ export const SceneKeys = {
   Battle: 'Battle',
   Cutscene: 'Cutscene',
   GameOver: 'GameOver',
+  Settings: 'Settings',
 } as const;
 
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];

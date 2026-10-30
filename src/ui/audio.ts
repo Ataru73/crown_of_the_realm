@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import music from '../data/music.json';
+import { clampVolume, loadSettings, saveSettings, type Settings } from '../game/settings';
 
 /** Sound effects in public/assets/sfx, made by tools/assets/sfx.py. */
 export const SFX = [
@@ -14,9 +15,10 @@ export type Track =
   | 'swordfight' | 'romance' | 'victory' | 'defeat';
 
 const TRACKS: string[] = music;
-const MUTE_KEY = 'crown-of-the-realm.mute';
-const MUSIC_VOLUME = 0.5;
 const FADE_MS = 800;
+/** Full volume for music and effects; the settings scale these down. */
+const MUSIC_VOLUME = 0.5;
+const SFX_VOLUME = 0.7;
 
 let current: { track: Track; sound: Phaser.Sound.BaseSound } | null = null;
 
@@ -26,12 +28,12 @@ export function loadAudio(scene: Phaser.Scene): void {
 }
 
 export function sfx(scene: Phaser.Scene, id: Sfx, config: Phaser.Types.Sound.SoundConfig = {}): void {
-  scene.sound.play(`sfx_${id}`, { volume: 0.7, ...config });
+  scene.sound.play(`sfx_${id}`, { ...config, volume: (config.volume ?? SFX_VOLUME) * settings.sfxVolume });
 }
 
 /** A looping effect (hoofbeats, flames) the caller stops itself. */
 export function sfxLoop(scene: Phaser.Scene, id: Sfx, volume = 0.5): Phaser.Sound.BaseSound {
-  const sound = scene.sound.add(`sfx_${id}`, { loop: true, volume });
+  const sound = scene.sound.add(`sfx_${id}`, { loop: true, volume: volume * settings.sfxVolume });
   sound.play();
   return sound;
 }
@@ -51,7 +53,7 @@ export function playMusic(scene: Phaser.Scene, track: Track, loop = true): void 
   if (!scene.cache.audio.exists(key)) return;
   const sound = scene.sound.add(key, { loop, volume: 0 });
   sound.play();
-  fade(scene, sound, MUSIC_VOLUME);
+  fade(scene, sound, MUSIC_VOLUME * settings.musicVolume);
   current = { track, sound };
 }
 
@@ -70,24 +72,49 @@ function storage(): Storage | null {
   }
 }
 
-/** Restores the remembered mute setting and wires up a toggle button and the M key. */
-export function setupMute(game: Phaser.Game, button: HTMLElement | null): void {
+let settings: Settings = loadSettings(storage());
+let game: Phaser.Game | null = null;
+const listeners: (() => void)[] = [];
+
+export function getSettings(): Readonly<Settings> {
+  return settings;
+}
+
+/** Applies and remembers a change to the sound settings. */
+export function updateSettings(change: Partial<Settings>): void {
+  settings = { ...settings, ...change };
+  settings.musicVolume = clampVolume(settings.musicVolume);
+  settings.sfxVolume = clampVolume(settings.sfxVolume);
+  saveSettings(settings, storage());
+  if (game) game.sound.mute = settings.mute;
+  if (current && 'volume' in current.sound) (current.sound as Phaser.Sound.WebAudioSound).volume = MUSIC_VOLUME * settings.musicVolume;
+  listeners.forEach((l) => l());
+}
+
+/** Calls `listener` after every settings change until the returned function is called. */
+export function onSettingsChange(listener: () => void): () => void {
+  listeners.push(listener);
+  return () => void listeners.splice(listeners.indexOf(listener), 1);
+}
+
+export function toggleMute(): void {
+  updateSettings({ mute: !settings.mute });
+}
+
+/** Restores the remembered settings and wires up the mute button and the M key. */
+export function setupAudio(phaserGame: Phaser.Game, muteButton: HTMLElement | null): void {
+  game = phaserGame;
+  game.sound.mute = settings.mute;
   const show = () => {
-    if (button) button.textContent = game.sound.mute ? '🔇' : '🔊';
+    if (muteButton) muteButton.textContent = settings.mute ? '🔇' : '🔊';
   };
-  const toggle = () => {
-    game.sound.mute = !game.sound.mute;
-    try {
-      storage()?.setItem(MUTE_KEY, game.sound.mute ? '1' : '0');
-    } catch {
-      // Not remembered, but still toggled.
-    }
-    show();
-  };
-  game.sound.mute = storage()?.getItem(MUTE_KEY) === '1';
+  onSettingsChange(show);
   show();
-  button?.addEventListener('click', toggle);
+  muteButton?.addEventListener('click', () => {
+    toggleMute();
+    muteButton.blur();
+  });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'm' || e.key === 'M') toggle();
+    if ((e.key === 'm' || e.key === 'M') && !e.repeat) toggleMute();
   });
 }

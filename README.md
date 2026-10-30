@@ -25,13 +25,19 @@ of each of your turns.
 
 ### Controls
 
+The game plays with the mouse, the keyboard, or a touch screen.
+
 | Where | Controls |
 |---|---|
-| Map | Click a county, then an action |
-| Joust | Aim with the mouse or arrow keys; click or Space to ride |
+| Map | Click a county (or move between them with the arrow keys), then an action (or its number key, 1 to 8) |
+| Muster dialog | 1 to 5 buy, C builds a castle, Enter is done |
+| Dialogs, screens | Enter (or Space) for the main button |
+| Hero choice | 1 to 4 |
+| Battle | 1 to 5 pick the tactic |
+| Joust | Aim with the mouse, a finger or the arrow keys; click, tap or Space to ride |
 | Sword fight | A or Space to strike, D or Shift to parry |
 | Siege | Up/Down to aim, hold and release Space to throw, 1/2 for stones or fire pots, Enter to storm |
-| Anywhere | M or the 🔊 button to mute |
+| Anywhere | Esc or ⚙ for settings (volume, full screen, quit to title); M or 🔊 to mute |
 
 ## Running it
 
@@ -44,8 +50,11 @@ npm test           # model tests (Vitest)
 npm run build      # static build into dist/
 ```
 
-`dist/` is a plain static site with relative paths, so it can be hosted anywhere,
-e.g. Cloudflare Pages (build command `npm run build`, output directory `dist`).
+`dist/` is a plain static site with relative paths, so it can be hosted anywhere.
+`.github/workflows/deploy.yml` tests, builds and publishes it to GitHub Pages on
+every push to `main` (set the repository's Pages source to "GitHub Actions").
+Elsewhere, e.g. Cloudflare Pages, use build command `npm run build` and output
+directory `dist`.
 
 ## How it's built
 

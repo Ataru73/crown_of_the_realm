@@ -39,3 +39,29 @@ export function areAdjacent(a: TerritoryId, b: TerritoryId): boolean {
 
 /** Raw border list, for validation in tests. */
 export const BORDERS: readonly (readonly string[])[] = data.borders;
+
+/**
+ * The territory a step from `from` in direction (dx, dy) on the map, for
+ * keyboard selection: the nearest one within 60° of that direction, favouring
+ * the straightest. Null at the edge of the map.
+ */
+export function territoryInDirection(from: TerritoryId, dx: number, dy: number): TerritoryId | null {
+  const origin = territoryDef(from);
+  const len = Math.hypot(dx, dy);
+  let best: TerritoryId | null = null;
+  let bestScore = Infinity;
+  for (const t of TERRITORIES) {
+    const vx = t.x - origin.x;
+    const vy = t.y - origin.y;
+    const dist = Math.hypot(vx, vy);
+    if (dist === 0) continue;
+    const cos = (vx * dx + vy * dy) / (dist * len);
+    if (cos < 0.5) continue;
+    const score = dist * (2 - cos);
+    if (score < bestScore) {
+      bestScore = score;
+      best = t.id;
+    }
+  }
+  return best;
+}

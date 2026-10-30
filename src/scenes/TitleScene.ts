@@ -17,10 +17,10 @@ export class TitleScene extends Phaser.Scene {
     if (hasSave) {
       addButton(this, WIDTH / 2, HEIGHT - 76, 'Continue', () => {
         if (session.resume()) this.scene.start(SceneKeys.Map);
-      });
+      }, { keys: ['ENTER', 'SPACE', 'C'] });
     }
     addButton(this, WIDTH / 2, HEIGHT - (hasSave ? 38 : 56), 'New Campaign', () =>
       this.scene.start(SceneKeys.HeroSelect),
-    );
+    { keys: hasSave ? ['N'] : ['ENTER', 'SPACE', 'N'] });
   }
 }

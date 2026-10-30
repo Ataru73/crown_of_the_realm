@@ -145,7 +145,7 @@ export class JoustScene extends Phaser.Scene {
     this.elapsed = 0;
     this.knight.setPosition(VANISH.x, VANISH.y).setScale(START_SCALE).setAngle(0).setAlpha(1);
     this.updateStatus();
-    this.messageText.setText('Aim at the centre of his shield with the mouse or arrow keys.\nClick or press Space to ride!');
+    this.messageText.setText('Aim at the centre of his shield: move the mouse, drag, or use the arrow keys.\nClick, tap or press Space to ride!');
   }
 
   private ride(): void {
@@ -230,7 +230,7 @@ export class JoustScene extends Phaser.Scene {
       mine === 'unhorse' && his === 'unhorse'
         ? ['Both lances strike true and both riders fall!', 'You remount for another pass.']
         : [PLAYER_LINES[mine], OPPONENT_LINES[his]];
-    if (!this.joust.over) lines.push('Click or press Space for the next pass.');
+    if (!this.joust.over) lines.push('Click, tap or press Space for the next pass.');
     this.messageText.setText(lines.join('\n'));
     if (this.joust.over) this.time.delayedCall(1200, () => this.finish());
   }
@@ -252,6 +252,6 @@ export class JoustScene extends Phaser.Scene {
       this.scene.start(SceneKeys.Map, {
         tournament: { opponent: this.opponent.id, stake: this.stake, won: j.won },
       }),
-    );
+    { keys: ['ENTER', 'SPACE'] });
   }
 }

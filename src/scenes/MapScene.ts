@@ -4,7 +4,7 @@ import { session } from '../game/session';
 import { attackableTerritories, marchableTerritories, type Action, type Stake } from '../model/actions';
 import { playAiTurn } from '../model/ai';
 import { income, upkeep } from '../model/economy';
-import { territoryDef } from '../model/map';
+import { territoryDef, territoryInDirection } from '../model/map';
 import { currentLord } from '../model/state';
 import { dateLabel, playTurn } from '../model/turn';
 import type { BattleResult } from '../model/combat';
@@ -14,6 +14,7 @@ import { openBuyDialog } from '../ui/BuyDialog';
 import { showDialog } from '../ui/Dialog';
 import { addBackdrop } from '../ui/assets';
 import { MapView } from '../ui/MapView';
+import { hasModal, onKeys } from '../ui/modal';
 import { COLORS, textStyle } from '../ui/theme';
 import { playMusic, sfx } from '../ui/audio';
 import type { CutsceneData } from './CutsceneScene';
@@ -96,18 +97,37 @@ export class MapScene extends Phaser.Scene {
       wordWrap: { width: WIDTH - PANEL_X - 14 },
     }));
 
-    const opts = { width: 156, height: 20, fontSize: 12 };
-    const at = (i: number) => 214 + i * 23;
+    // Number keys press the buttons; B also musters, as it closes the muster dialog.
+    const digits = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT'];
+    const button = (i: number, label: string, onClick: () => void, keys: string[] = []) =>
+      new Button(this, PANEL_CENTER, 214 + i * 23, label, onClick, {
+        width: 156,
+        height: 20,
+        fontSize: 12,
+        keys: [digits[i], `NUMPAD_${digits[i]}`, ...keys],
+        keyLabel: String(i + 1),
+      });
     this.buttons = {
-      buy: new Button(this, PANEL_CENTER, at(0), 'Muster Army', () => this.openBuy(), opts),
-      march: new Button(this, PANEL_CENTER, at(1), 'March', () => this.march(), opts),
-      attack: new Button(this, PANEL_CENTER, at(2), 'Attack', () => this.attack(), opts),
-      raid: new Button(this, PANEL_CENTER, at(3), 'Raid Castle', () => this.raid(), opts),
-      rescue: new Button(this, PANEL_CENTER, at(4), 'Rescue Lady', () => this.rescue(), opts),
-      joustFame: new Button(this, PANEL_CENTER, at(5), 'Joust for Fame', () => this.joust('fame'), opts),
-      joustLand: new Button(this, PANEL_CENTER, at(6), 'Joust for Land', () => this.joust('land'), opts),
-      pass: new Button(this, PANEL_CENTER, at(7), 'Rest (End Turn)', () => this.act({ type: 'pass' }), opts),
+      buy: button(0, 'Muster Army', () => this.openBuy(), ['B']),
+      march: button(1, 'March', () => this.march()),
+      attack: button(2, 'Attack', () => this.attack()),
+      raid: button(3, 'Raid Castle', () => this.raid()),
+      rescue: button(4, 'Rescue Lady', () => this.rescue()),
+      joustFame: button(5, 'Joust for Fame', () => this.joust('fame')),
+      joustLand: button(6, 'Joust for Land', () => this.joust('land')),
+      pass: button(7, 'Rest (End Turn)', () => this.act({ type: 'pass' })),
     };
+
+    // Arrow keys move the selection across the map, starting from the army.
+    const arrows: [string, number, number][] = [['LEFT', -1, 0], ['RIGHT', 1, 0], ['UP', 0, -1], ['DOWN', 0, 1]];
+    for (const [key, dx, dy] of arrows) {
+      onKeys(this, [key], () => {
+        if (hasModal(this) || this.state.status !== 'playing') return;
+        const from = this.selected ?? this.player.armyAt;
+        const to = this.selected ? territoryInDirection(from, dx, dy) : from;
+        if (to) this.select(to, true);
+      });
+    }
   }
 
   private get player() {
@@ -125,8 +145,9 @@ export class MapScene extends Phaser.Scene {
     return lord && !lord.isPlayer && lord.alive ? lord : null;
   }
 
-  private select(id: TerritoryId): void {
-    this.selected = this.selected === id ? null : id;
+  /** Clicking the selected territory again clears the selection; `keep` doesn't. */
+  private select(id: TerritoryId, keep = false): void {
+    this.selected = this.selected === id && !keep ? null : id;
     this.refresh();
   }
 
@@ -177,8 +198,8 @@ export class MapScene extends Phaser.Scene {
     if (this.busy) return `${currentLord(this.state).name} is moving...`;
     if (!this.selected) {
       const k = this.state.kidnap;
-      if (k) return `Click a territory.\n${k.lady} is held by ${this.state.lords[k.captor].name}!`;
-      return 'Click a territory.\nRed rings: lands your army can attack.';
+      if (k) return `Choose a territory (click, or arrow keys).\n${k.lady} is held by ${this.state.lords[k.captor].name}!`;
+      return 'Choose a territory (click, or arrow keys).\nRed rings: lands your army can attack.';
     }
     const t = this.state.territories[this.selected];
     const def = territoryDef(t.id);

@@ -18,6 +18,6 @@ export class GameOverScene extends Phaser.Scene {
     }
     addButton(this, WIDTH / 2, HEIGHT - 40, 'Back to Title', () =>
       this.scene.start(SceneKeys.Title),
-    );
+    { keys: ['ENTER', 'SPACE'] });
   }
 }
