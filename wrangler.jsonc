@@ -1,0 +1,11 @@
+// Cloudflare Workers deploy: serves the Vite build in dist/ as static assets.
+// With this file present, `wrangler deploy` skips its auto-setup, which tries
+// to add the Cloudflare Vite plugin and fails on vite.config.ts.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crown-of-the-realm",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
