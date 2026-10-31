@@ -9,6 +9,7 @@ import { currentLord } from '../model/state';
 import { dateLabel, playTurn } from '../model/turn';
 import type { BattleResult } from '../model/combat';
 import { RuleError, type Army, type GameState, type Kidnap, type Lord, type LordId, type TerritoryId } from '../model/types';
+import { addArmies } from '../model/army';
 import { Button } from '../ui/Button';
 import { openBuyDialog } from '../ui/BuyDialog';
 import { showDialog } from '../ui/Dialog';
@@ -71,9 +72,10 @@ export class MapScene extends Phaser.Scene {
     addBackdrop(this, 'map');
     this.map = new MapView(this, (id) => this.select(id));
     this.buildPanel();
-    // The selected rival's portrait sits over the Channel in the map's bottom-right corner.
-    this.portrait = this.add.image(PANEL_X - 4, HEIGHT - 4, '__DEFAULT').setOrigin(1).setVisible(false);
-    this.portraitFrame = this.add.rectangle(PANEL_X - 4, HEIGHT - 4, 96, 80).setOrigin(1).setStrokeStyle(2, COLORS.border).setVisible(false);
+    // The selected rival's portrait sits over the Channel in the map's bottom-right corner,
+    // above the labels and army banners (Kent's label reaches into it).
+    this.portrait = this.add.image(PANEL_X - 4, HEIGHT - 4, '__DEFAULT').setOrigin(1).setDepth(3).setVisible(false);
+    this.portraitFrame = this.add.rectangle(PANEL_X - 4, HEIGHT - 4, 96, 80).setOrigin(1).setStrokeStyle(2, COLORS.border).setDepth(3).setVisible(false);
     // The chronicle sits over the open sea in the map's top-left corner.
     this.logBack = this.add.rectangle(4, 4, LOG_WIDTH + 8, 0, 0x000000, 0.55).setOrigin(0);
     this.logText = this.add.text(8, 7, '', textStyle(10, '#f4e4bc', { lineSpacing: 1, wordWrap: { width: LOG_WIDTH } }));
@@ -92,7 +94,7 @@ export class MapScene extends Phaser.Scene {
     this.add.rectangle(PANEL_X, 0, 3, HEIGHT, COLORS.border).setOrigin(0);
     this.dateText = this.add.text(PANEL_CENTER, 8, '', textStyle(15)).setOrigin(0.5, 0);
     this.lordText = this.add.text(PANEL_X + 10, 30, '', textStyle(11, '#3a2210', { lineSpacing: 2 }));
-    this.infoText = this.add.text(PANEL_X + 10, 130, '', textStyle(11, '#3a2210', {
+    this.infoText = this.add.text(PANEL_X + 10, 138, '', textStyle(11, '#3a2210', {
       lineSpacing: 2,
       wordWrap: { width: WIDTH - PANEL_X - 14 },
     }));
@@ -158,13 +160,16 @@ export class MapScene extends Phaser.Scene {
     this.map.refresh(s, this.selected, attackable);
 
     this.dateText.setText(dateLabel(s));
-    const net = income(s, p.id) - upkeep(p.army);
+    const net = income(s, p.id) - upkeep(addArmies(p.army, p.reserve));
     this.lordText.setText([
       p.name,
       `Gold ${p.gold}  (${net >= 0 ? '+' : ''}${net}/month)`,
       `Fame ${p.fame}`,
       `Army: ${p.army.soldiers} soldiers, ${p.army.knights} knights,`,
       `      ${p.army.catapults} catapults`,
+      ...(p.reserve.soldiers + p.reserve.knights + p.reserve.catapults > 0
+        ? [`At home: ${p.reserve.soldiers}s ${p.reserve.knights}k ${p.reserve.catapults}c`]
+        : []),
       `Camped at ${territoryDef(p.armyAt).name}`,
     ].join('\n'));
 

@@ -44,11 +44,12 @@ export class MapView {
       scene.add
         .text(x, y + RADIUS + 3, def.name, textStyle(10, '#f4e4bc', { stroke: '#000', strokeThickness: 3 }))
         .setOrigin(0.5, 0)
-        .setDepth(1); // above neighbouring army banners
-      const banner = addTinted(scene, x + 22, y - 14, 'banner', COLORS.neutral);
+        .setDepth(1); // below the army banners and counts (depth 2)
+      const banner = addTinted(scene, x + 22, y - 14, 'banner', COLORS.neutral).setDepth(2);
       const bannerText = scene.add
         .text(x + 38, y - 16, '', textStyle(9, '#ffffff', { stroke: '#000', strokeThickness: 3 }))
-        .setOrigin(0, 0.5);
+        .setOrigin(0, 0.5)
+        .setDepth(2);
       this.nodes.set(def.id, { ring, shield, castle, banner, bannerText });
     }
   }

@@ -22,6 +22,7 @@ export function deserialize(json: string): GameState {
   const state = data as Partial<GameState> | null;
   if (!state || typeof state !== 'object') throw new SaveError('Save data is not an object');
   if (state.version === 1) migrateV1(state);
+  if (state.version === 2) migrateV2(state);
   if (state.version !== STATE_VERSION) {
     throw new SaveError(`Unsupported save version: ${String(state.version)}`);
   }
@@ -40,6 +41,12 @@ function migrateV1(state: Partial<GameState>): void {
   state.ladiesTaken = [];
   state.wife = null;
   state.version = 2;
+}
+
+/** Version 3 added the home garrison (`reserve`). */
+function migrateV2(state: Partial<GameState>): void {
+  for (const lord of Object.values(state.lords ?? {})) lord.reserve = { soldiers: 0, knights: 0, catapults: 0 };
+  state.version = 3;
 }
 
 export function saveGame(state: GameState, storage: Pick<Storage, 'setItem'>): void {

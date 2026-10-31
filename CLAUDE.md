@@ -66,7 +66,7 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
 - **Saving:** the game autosaves to localStorage (`crown-of-the-realm.save`) at
   the start of each player turn. When `GameState` changes shape, bump
   `STATE_VERSION` (`state.ts`) and add a migration in `save.ts`. It is currently
-  v2, with a v1 migration.
+  v3 (v2 added the kidnap event, v3 the home garrison), with migrations from v1 and v2.
 
 ## Audio
 
@@ -151,12 +151,16 @@ static assets on Cloudflare Workers.
 | M9 Polish, controls, deploy | ✅ |
 | M10 3D rendered animated sprites (B1 army, B2 swordsmen, B3 joust, B4 siege) | In progress (B1, B2, B3, B4 ✅) |
 
-There are 124 tests, all passing.
+There are 127 tests, all passing.
 
 ### Known issues / deferred
+- Troops are bought into `Lord.reserve`, the home castle's garrison (it also defends
+  the castle). It joins the campaign army when that stands at home (`joinReserve`):
+  at once if it is there, else on `march` home. The AI saves gold while in the field
+  and visits home to spend it (`RESERVE_SHARE`). Saxon start gold is 40 to offset the lost tempo.
 - Balance: the three Saxon home counties have income 7 (Normans were winning 83%
-  of simulated games). The AI-played hero now wins ~40%, Normans ~40%, Saxon
-  rivals ~20%, but games average ~90 months. The sim is chaotic: small rule changes
+  of simulated games). The AI-played hero now wins ~27%, Normans ~46%, Saxon
+  rivals ~20%, but games average ~42 months. The sim is chaotic: small rule changes
   swing the results a lot, so rerun the balance test after any change.
 - Music: all 9 tracks exist. `playMusic` stays silent for any track missing from
   `src/data/music.json`. When regenerating: Lyria makes one ~3-minute take per chat

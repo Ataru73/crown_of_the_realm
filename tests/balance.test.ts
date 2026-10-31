@@ -38,7 +38,7 @@ function runBalance(): BalanceReport {
  * The player's lord is played by the same simple AI here, which plays worse
  * than a person (it leaves its castle exposed). These bounds guard against
  * regressions: stalemates, Norman blitzes, or a player who can never win.
- * Last measured: 41 won, 59 lost (39 to Normans, 20 to Saxon rivals), 92 months.
+ * Last measured: 27 won, 73 lost (46 to Normans, 27 to Saxon rivals), 42 months.
  */
 describe('balance', () => {
   const r = runBalance();

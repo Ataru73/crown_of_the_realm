@@ -1,6 +1,6 @@
 import { addArmies, emptyArmy, strength } from './army';
 import { resolveBattle, type BattleInput, type BattleResult } from './combat';
-import { garrisonCap } from './economy';
+import { garrisonCap, joinReserve } from './economy';
 import { applyRescue, requireKidnap, rescueChance } from './events';
 import { neighbours, territoryDef } from './map';
 import type { Rng } from './rng';
@@ -76,19 +76,29 @@ export function march(state: GameState, lordId: LordId, target: TerritoryId): vo
   const lord = state.lords[lordId];
   lord.armyAt = target;
   addLog(state, `${lord.name} marches to ${territoryDef(target).name}.`);
+  if (target === lord.home && strength(lord.reserve) + lord.reserve.catapults > 0) {
+    joinReserve(state, lordId);
+    addLog(state, `The home garrison joins ${lord.name}'s army.`);
+  }
 }
 
-/** Garrison plus the owner's campaign army if it stands there. */
+/** Garrison plus the owner's campaign army if it stands there, and their home garrison at the home castle. */
 export function defendingArmy(state: GameState, territoryId: TerritoryId): Army {
   const territory = state.territories[territoryId];
   const owner = territory.owner ? state.lords[territory.owner] : null;
-  return owner?.armyAt === territoryId ? addArmies(territory.garrison, owner.army) : territory.garrison;
+  let army = territory.garrison;
+  if (owner?.armyAt === territoryId) army = addArmies(army, owner.army);
+  if (owner?.home === territoryId) army = addArmies(army, owner.reserve);
+  return army;
 }
 
 /** Sends a lord's campaign army back home if the land it stood on is no longer theirs. */
 function regroupArmies(state: GameState): void {
   for (const lord of Object.values(state.lords)) {
-    if (lord.alive && state.territories[lord.armyAt].owner !== lord.id) lord.armyAt = lord.home;
+    if (lord.alive && state.territories[lord.armyAt].owner !== lord.id) {
+      lord.armyAt = lord.home;
+      joinReserve(state, lord.id);
+    }
   }
 }
 
@@ -105,6 +115,7 @@ function eliminate(state: GameState, loserId: LordId, winnerId: LordId): void {
   winner.gold += loser.gold;
   loser.gold = 0;
   loser.army = emptyArmy();
+  loser.reserve = emptyArmy();
   loser.alive = false;
   addLog(state, `${loser.name} is defeated! ${winner.name} seizes their treasury; their lands revolt.`);
 }
@@ -169,11 +180,23 @@ export function conquer(
       knights: Math.min(g.knights, survivors.knights),
       catapults: g.catapults,
     };
+    // What is left of the garrison's share goes to the field army, then the home garrison.
+    const rest = {
+      soldiers: survivors.soldiers - territory.garrison.soldiers,
+      knights: survivors.knights - territory.garrison.knights,
+    };
     if (owner && ownerArmyHere) {
-      owner.army = {
-        soldiers: survivors.soldiers - territory.garrison.soldiers,
-        knights: survivors.knights - territory.garrison.knights,
-        catapults: owner.army.catapults,
+      const soldiers = Math.min(owner.army.soldiers, rest.soldiers);
+      const knights = Math.min(owner.army.knights, rest.knights);
+      rest.soldiers -= soldiers;
+      rest.knights -= knights;
+      owner.army = { soldiers, knights, catapults: owner.army.catapults };
+    }
+    if (owner && owner.home === target) {
+      owner.reserve = {
+        soldiers: Math.min(owner.reserve.soldiers, rest.soldiers),
+        knights: Math.min(owner.reserve.knights, rest.knights),
+        catapults: owner.reserve.catapults,
       };
     }
     addLog(state, `${lord.name} is driven back from ${name}.`);

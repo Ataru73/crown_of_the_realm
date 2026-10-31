@@ -34,6 +34,21 @@ describe('economy', () => {
     expect(() => buy(s, 'player', 'soldier', 0)).toThrow(RuleError);
   });
 
+  it('musters troops at the home castle until the army returns', () => {
+    const s = game();
+    const lord = s.lords.player;
+    const soldiers = lord.army.soldiers;
+    lord.gold = 100;
+    lord.armyAt = 'york';
+    buy(s, 'player', 'soldier', 10);
+    expect(lord.army.soldiers).toBe(soldiers);
+    expect(lord.reserve.soldiers).toBe(10);
+    lord.armyAt = lord.home;
+    buy(s, 'player', 'soldier', 1);
+    expect(lord.army.soldiers).toBe(soldiers + 11);
+    expect(lord.reserve.soldiers).toBe(0);
+  });
+
   it('makes soldiers desert when upkeep cannot be paid', () => {
     const s = game();
     const lord = s.lords.player;

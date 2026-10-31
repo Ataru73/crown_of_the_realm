@@ -10,10 +10,12 @@ import type { GameState, LordId, TerritoryId } from './types';
 
 /** Attack only when this many times stronger than the defenders (after castle walls). */
 const ATTACK_MARGIN = 1.5;
+/** March home to collect the garrison once it is this fraction of the army's strength. */
+const RESERVE_SHARE = 0.3;
 
 function canSustain(state: GameState, lordId: LordId, unit: Unit): boolean {
   const lord = state.lords[lordId];
-  const after = addArmies(lord.army, {
+  const after = addArmies(addArmies(lord.army, lord.reserve), {
     soldiers: unit === 'soldier' ? 1 : 0,
     knights: unit === 'knight' ? 1 : 0,
     catapults: unit === 'catapult' ? 1 : 0,
@@ -24,6 +26,8 @@ function canSustain(state: GameState, lordId: LordId, unit: Unit): boolean {
 /** Spends gold on troops the lord's income can keep paying for. */
 export function aiSpend(state: GameState, lordId: LordId): void {
   const lord = state.lords[lordId];
+  // Troops are mustered at the home castle, so a lord in the field saves its gold for the next visit.
+  if (lord.armyAt !== lord.home) return;
   const enemyCastleInReach = attackableTerritories(state, lordId).some(
     (id) => state.territories[id].castle,
   );
@@ -92,6 +96,13 @@ export function chooseAiAction(state: GameState, lordId: LordId, rng: Rng): Acti
     }
     if (lord.armyAt === lord.home) best = null;
   }
+  // Visit the home castle to spend the gold saved up once it would add a good share to the army.
+  const goHome =
+    lord.armyAt !== lord.home &&
+    canSustain(state, lordId, 'soldier') &&
+    lord.gold >= myStrength * RESERVE_SHARE &&
+    marchableTerritories(state, lordId).includes(lord.home);
+  if (goHome) return { type: 'march', target: lord.home };
   if (best) return { type: 'conquer', target: best.target };
 
   const rivals = Object.values(state.lords).filter((l) => l.alive && l.id !== lordId);

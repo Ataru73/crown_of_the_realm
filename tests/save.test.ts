@@ -38,6 +38,12 @@ describe('save/load', () => {
     expect(deserialize(JSON.stringify(old))).toEqual(game());
   });
 
+  it('upgrades version 2 saves with an empty home garrison', () => {
+    const old = JSON.parse(JSON.stringify({ ...game(), version: 2 }));
+    for (const lord of Object.values<Record<string, unknown>>(old.lords)) delete lord.reserve;
+    expect(deserialize(JSON.stringify(old))).toEqual(game());
+  });
+
   it('rejects bad save data', () => {
     expect(() => deserialize('not json')).toThrow(SaveError);
     expect(() => deserialize('null')).toThrow(SaveError);

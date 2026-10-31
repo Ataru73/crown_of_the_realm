@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { HEIGHT, WIDTH } from '../config';
 import { buildCastle, buy, income, PRICES, upkeep, type Unit } from '../model/economy';
+import { addArmies } from '../model/army';
 import { territoryDef } from '../model/map';
 import type { GameState, LordId, TerritoryId } from '../model/types';
 import { Button } from './Button';
@@ -49,7 +50,7 @@ export function openBuyDialog(
 
   updaters.push(() =>
     goldText.setText(
-      `Gold: ${lord.gold}    Income: ${income(state, lordId)}/month    Upkeep: ${upkeep(lord.army)}/month`,
+      `Gold: ${lord.gold}    Income: ${income(state, lordId)}/month    Upkeep: ${upkeep(addArmies(lord.army, lord.reserve))}/month`,
     ),
   );
 
@@ -60,7 +61,7 @@ export function openBuyDialog(
     const label = scene.add.text(-195, y, '', textStyle(14)).setOrigin(0, 0.5);
     container.add(label);
     updaters.push(() =>
-      label.setText(`${row.label} (${PRICES[row.unit]}g)   you have ${lord.army[`${row.unit}s`]}`),
+      label.setText(`${row.label} (${PRICES[row.unit]}g)   you have ${lord.army[`${row.unit}s`] + lord.reserve[`${row.unit}s`]}`),
     );
     row.steps.forEach((qty, j) => {
       const button = new Button(scene, 110 + j * 54, y, `+${qty}`, () => {
@@ -94,9 +95,15 @@ export function openBuyDialog(
     castleButton.setVisible(canPlace).setEnabled(canPlace && lord.gold >= PRICES.castle);
   });
 
-  const note = scene.add
-    .text(0, 84, 'Upkeep above income makes soldiers desert.\nKeys: 1 to 5 buy, in order · C builds · Enter is done', textStyle(11, '#6a4a2a', { align: 'center' }))
-    .setOrigin(0.5);
+  const note = scene.add.text(0, 80, '', textStyle(11, '#6a4a2a', { align: 'center' })).setOrigin(0.5);
+  updaters.push(() => {
+    const r = lord.reserve;
+    const waiting =
+      r.soldiers + r.knights + r.catapults > 0
+        ? `Waiting at ${territoryDef(lord.home).name}: ${r.soldiers} soldiers, ${r.knights} knights, ${r.catapults} catapults.\nMarch home to join them.`
+        : 'Troops muster at your home castle.';
+    note.setText(`${waiting}\nUpkeep above income makes soldiers desert.\nKeys: 1 to 5 buy, in order · C builds · Enter is done`);
+  });
   const done = new Button(scene, 0, 120, 'Done', () => {
     container.destroy();
     blocker.destroy();

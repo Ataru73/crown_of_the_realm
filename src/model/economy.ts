@@ -1,4 +1,4 @@
-import { addArmies } from './army';
+import { addArmies, emptyArmy } from './army';
 import { territoryDef } from './map';
 import {
   RuleError,
@@ -22,7 +22,7 @@ export function income(state: GameState, lordId: LordId): number {
   return ownedTerritories(state, lordId).reduce((sum, id) => sum + territoryDef(id).income, 0);
 }
 
-/** Monthly cost of keeping the campaign army in the field. */
+/** Monthly cost of keeping an army, or a lord's army and home garrison together. */
 export function upkeep(army: Army): number {
   return Math.floor((army.soldiers + army.knights * 4 + army.catapults * 10) / 10);
 }
@@ -30,7 +30,7 @@ export function upkeep(army: Army): number {
 /** Adds income minus upkeep. If the lord can't pay, a tenth of the soldiers desert. */
 export function collectIncome(state: GameState, lordId: LordId): number {
   const lord = state.lords[lordId];
-  const net = income(state, lordId) - upkeep(lord.army);
+  const net = income(state, lordId) - upkeep(addArmies(lord.army, lord.reserve));
   lord.gold += net;
   if (lord.gold < 0) {
     lord.gold = 0;
@@ -64,14 +64,26 @@ export function maxAffordable(state: GameState, lordId: LordId, unit: Unit): num
   return Math.floor(state.lords[lordId].gold / PRICES[unit]);
 }
 
-/** Buys units into the campaign army. Doesn't use up the turn. */
+/** The home garrison joins the campaign army if it stands at the home castle. */
+export function joinReserve(state: GameState, lordId: LordId): void {
+  const lord = state.lords[lordId];
+  if (lord.armyAt !== lord.home) return;
+  lord.army = addArmies(lord.army, lord.reserve);
+  lord.reserve = emptyArmy();
+}
+
+/**
+ * Buys units into the home castle's garrison, which joins the campaign army
+ * when it is at home. Doesn't use up the turn.
+ */
 export function buy(state: GameState, lordId: LordId, unit: Unit, qty: number): void {
   if (!Number.isInteger(qty) || qty <= 0) throw new RuleError(`Invalid quantity: ${qty}`);
   const lord = state.lords[lordId];
   const cost = PRICES[unit] * qty;
   if (cost > lord.gold) throw new RuleError(`Not enough gold: need ${cost}, have ${lord.gold}`);
   lord.gold -= cost;
-  lord.army = addArmies(lord.army, unitArmy(unit, qty));
+  lord.reserve = addArmies(lord.reserve, unitArmy(unit, qty));
+  joinReserve(state, lordId);
 }
 
 /** Fortifies one of the lord's territories. Doesn't use up the turn. */

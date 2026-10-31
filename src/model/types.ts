@@ -29,6 +29,11 @@ export interface Lord {
   /** The campaign army, which marches and attacks. */
   army: Army;
   armyAt: TerritoryId;
+  /**
+   * Troops bought but not yet with the campaign army: the garrison of the home
+   * castle. They join the army when it stands at home.
+   */
+  reserve: Army;
 }
 
 export interface Territory {

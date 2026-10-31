@@ -16,7 +16,7 @@ export const HEROES: readonly Hero[] = heroData.heroes;
 
 const START: Record<Faction, { gold: number; army: Army; garrison: Army }> = {
   saxon: {
-    gold: 10,
+    gold: 40,
     army: { soldiers: 20, knights: 2, catapults: 0 },
     garrison: { soldiers: 30, knights: 3, catapults: 0 },
   },
@@ -57,7 +57,7 @@ export function newGame(heroId: string, seed: number): GameState {
     return {
       id, name, faction, isPlayer, stats: { ...stats },
       fame: 0, gold: start.gold, home, alive: true,
-      army: { ...start.army }, armyAt: home,
+      army: { ...start.army }, armyAt: home, reserve: { soldiers: 0, knights: 0, catapults: 0 },
     };
   };
 

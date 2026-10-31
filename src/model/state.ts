@@ -1,6 +1,6 @@
 import type { GameState, Lord } from './types';
 
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 const LOG_LIMIT = 100;
 
 export function addLog(state: GameState, message: string): void {

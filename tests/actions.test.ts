@@ -5,10 +5,12 @@ import {
   attackableTerritories,
   battleInput,
   conquer,
+  defendingArmy,
   joustChance,
   march,
   marchableTerritories,
 } from '../src/model/actions';
+import { buy } from '../src/model/economy';
 import { neighbours } from '../src/model/map';
 import { Rng } from '../src/model/rng';
 import { playTurn } from '../src/model/turn';
@@ -194,5 +196,21 @@ describe('raid action', () => {
     const r = playTurn(s, { type: 'raid', target: 'montclair', won: true });
     expect(r.won).toBe(true);
     expect(r.gold).toBe(20);
+  });
+});
+
+describe('home garrison', () => {
+  it('defends the home castle and joins the army when it marches home', () => {
+    const s = game();
+    const lord = s.lords.player;
+    s.territories.chester.owner = 'player';
+    lord.armyAt = 'chester';
+    lord.gold = 50;
+    buy(s, 'player', 'knight', 3);
+    expect(lord.reserve.knights).toBe(3);
+    expect(defendingArmy(s, lord.home).knights).toBe(lord.reserve.knights + s.territories[lord.home].garrison.knights);
+    march(s, 'player', lord.home);
+    expect(lord.reserve.knights).toBe(0);
+    expect(lord.army.knights).toBe(5);
   });
 });
