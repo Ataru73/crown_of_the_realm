@@ -37,7 +37,7 @@ export class CutsceneScene extends Phaser.Scene {
     const next = () => {
       if (done) return;
       done = true;
-      this.scene.start(data.next, data.nextData);
+      this.scene.start(data.next, data.nextData ?? {});
     };
     this.input.once('pointerup', next);
     onKeys(this, ['ENTER', 'SPACE'], next);
