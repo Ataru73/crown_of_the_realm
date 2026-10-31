@@ -135,10 +135,8 @@ export class SiegeScene extends Phaser.Scene {
     const pivotX = fx + (framePivot.x - this.catapultFrame.width * 0.5) * scale;
     const pivotY = fy + (framePivot.y - this.catapultFrame.height * 1.0) * scale;
 
-    this.catapultArm = this.add
-      .image(pivotX, pivotY, 'catapult_arm')
-      .setOrigin(armPivot.x / this.catapultArm.width, armPivot.y / this.catapultArm.height)
-      .setScale(scale);
+    this.catapultArm = this.add.image(pivotX, pivotY, 'catapult_arm').setScale(scale);
+    this.catapultArm.setOrigin(armPivot.x / this.catapultArm.width, armPivot.y / this.catapultArm.height);
 
     this.ammoInBucket = this.add.circle(0, 0, 4, 0x6a6460).setVisible(false);
     this.aimGuide = this.add.graphics();
