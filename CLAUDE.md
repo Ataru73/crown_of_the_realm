@@ -66,7 +66,8 @@ resolution is 640×400 (`src/config.ts`), with `pixelArt` and `Scale.FIT`.
 - **Saving:** the game autosaves to localStorage (`crown-of-the-realm.save`) at
   the start of each player turn. When `GameState` changes shape, bump
   `STATE_VERSION` (`state.ts`) and add a migration in `save.ts`. It is currently
-  v3 (v2 added the kidnap event, v3 the home garrison), with migrations from v1 and v2.
+  v4 (v2 added the kidnap event, v3 the home garrison, v4 AI temperaments), with
+  migrations from v1, v2 and v3.
 
 ## Audio
 
@@ -151,16 +152,22 @@ static assets on Cloudflare Workers.
 | M9 Polish, controls, deploy | ✅ |
 | M10 3D rendered animated sprites (B1 army, B2 swordsmen, B3 joust, B4 siege) | In progress (B1, B2, B3, B4 ✅) |
 
-There are 127 tests, all passing.
+There are 134 tests, all passing.
 
 ### Known issues / deferred
 - Troops are bought into `Lord.reserve`, the home castle's garrison (it also defends
   the castle). It joins the campaign army when that stands at home (`joinReserve`):
   at once if it is there, else on `march` home. The AI saves gold while in the field
   and visits home to spend it (`RESERVE_SHARE`). Saxon start gold is 40 to offset the lost tempo.
+- Variety: `newGame` rolls each rival a `temperament` (attack margin, knight share,
+  thrift, close to `DEFAULT_TEMPERAMENT` in `ai.ts`; the hero keeps the default),
+  shuffles the rivals' turn order (the hero always moves first) and starts neutral
+  garrisons within ±10% of their cap. The AI picks among targets scoring within 80%
+  of the best, weighted by score. Before this, every game opened identically.
 - Balance: the three Saxon home counties have income 7 (Normans were winning 83%
-  of simulated games). The AI-played hero now wins ~27%, Normans ~46%, Saxon
-  rivals ~20%, but games average ~42 months. The sim is chaotic: small rule changes
+  of simulated games). The AI-played hero now wins ~18%, Normans ~43%, Saxon
+  rivals ~39%, and games average ~37 months. (The hero's ~27% before the variety
+  came from the one fixed opening, in which it always took York first.) The sim is chaotic: small rule changes
   swing the results a lot, so rerun the balance test after any change.
 - Music: all 9 tracks exist. `playMusic` stays silent for any track missing from
   `src/data/music.json`. When regenerating: Lyria makes one ~3-minute take per chat

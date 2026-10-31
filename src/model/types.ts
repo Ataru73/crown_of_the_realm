@@ -15,6 +15,16 @@ export interface Stats {
   swordplay: number;
 }
 
+/** How an AI lord plays; rolled at the start of each game so rivals differ from one game to the next. */
+export interface Temperament {
+  /** How many times stronger than the defenders (after walls) the lord wants to be before attacking. */
+  caution: number;
+  /** Share of the gold spent on knights rather than soldiers. */
+  knightShare: number;
+  /** Gold saved, as a share of the army's strength, before marching home to spend it. */
+  thrift: number;
+}
+
 export interface Lord {
   id: LordId;
   name: string;
@@ -34,6 +44,7 @@ export interface Lord {
    * castle. They join the army when it stands at home.
    */
   reserve: Army;
+  temperament: Temperament;
 }
 
 export interface Territory {

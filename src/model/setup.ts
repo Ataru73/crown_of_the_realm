@@ -1,8 +1,10 @@
 import heroData from '../data/heroes.json';
 import lordData from '../data/lords.json';
+import { DEFAULT_TEMPERAMENT, rollTemperament } from './ai';
 import { emptyArmy } from './army';
 import { collectIncome, garrisonCap } from './economy';
 import { TERRITORIES } from './map';
+import { Rng } from './rng';
 import { addLog, STATE_VERSION } from './state';
 import type { Army, Faction, GameState, Lord, Stats, Territory } from './types';
 
@@ -27,9 +29,13 @@ const START: Record<Faction, { gold: number; army: Army; garrison: Army }> = {
   },
 };
 
+/** Neutral garrisons start up to this share above or below their cap, so the first conquests differ from game to game. */
+const START_GARRISON_SPREAD = 0.1;
+
 export function newGame(heroId: string, seed: number): GameState {
   const hero = HEROES.find((h) => h.id === heroId);
   if (!hero) throw new Error(`Unknown hero: ${heroId}`);
+  const rng = new Rng(seed);
 
   const territories: Record<string, Territory> = {};
   for (const def of TERRITORIES) {
@@ -39,7 +45,8 @@ export function newGame(heroId: string, seed: number): GameState {
       garrison: emptyArmy(),
       castle: false,
     };
-    territories[def.id].garrison.soldiers = garrisonCap(territories[def.id]);
+    const share = 1 + (rng.next() * 2 - 1) * START_GARRISON_SPREAD;
+    territories[def.id].garrison.soldiers = Math.round(garrisonCap(territories[def.id]) * share);
   }
 
   const makeLord = (
@@ -58,14 +65,22 @@ export function newGame(heroId: string, seed: number): GameState {
       id, name, faction, isPlayer, stats: { ...stats },
       fame: 0, gold: start.gold, home, alive: true,
       army: { ...start.army }, armyAt: home, reserve: { soldiers: 0, knights: 0, catapults: 0 },
+      // The hero's temperament only matters when the AI plays them (in the balance simulation).
+      temperament: isPlayer ? { ...DEFAULT_TEMPERAMENT } : rollTemperament(rng),
     };
   };
 
+  // The hero always moves first; the rivals follow in a random order.
+  const rivals = lordData.rivals.map((r) =>
+    makeLord(r.id, r.name, r.faction as Faction, r.home, r.stats, false),
+  );
+  for (let i = rivals.length - 1; i > 0; i--) {
+    const j = rng.int(0, i);
+    [rivals[i], rivals[j]] = [rivals[j], rivals[i]];
+  }
   const lords: Lord[] = [
     makeLord(lordData.player.id, hero.name, 'saxon', lordData.player.home, hero.stats, true),
-    ...lordData.rivals.map((r) =>
-      makeLord(r.id, r.name, r.faction as Faction, r.home, r.stats, false),
-    ),
+    ...rivals,
   ];
 
   const state: GameState = {
@@ -76,7 +91,7 @@ export function newGame(heroId: string, seed: number): GameState {
     turnOrder: lords.map((l) => l.id),
     current: 0,
     territories,
-    rngState: seed >>> 0,
+    rngState: rng.state,
     status: 'playing',
     log: [],
     kidnap: null,

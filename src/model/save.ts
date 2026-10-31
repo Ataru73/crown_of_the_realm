@@ -1,3 +1,4 @@
+import { DEFAULT_TEMPERAMENT } from './ai';
 import { TERRITORIES } from './map';
 import { STATE_VERSION } from './state';
 import type { GameState } from './types';
@@ -23,6 +24,7 @@ export function deserialize(json: string): GameState {
   if (!state || typeof state !== 'object') throw new SaveError('Save data is not an object');
   if (state.version === 1) migrateV1(state);
   if (state.version === 2) migrateV2(state);
+  if (state.version === 3) migrateV3(state);
   if (state.version !== STATE_VERSION) {
     throw new SaveError(`Unsupported save version: ${String(state.version)}`);
   }
@@ -47,6 +49,12 @@ function migrateV1(state: Partial<GameState>): void {
 function migrateV2(state: Partial<GameState>): void {
   for (const lord of Object.values(state.lords ?? {})) lord.reserve = { soldiers: 0, knights: 0, catapults: 0 };
   state.version = 3;
+}
+
+/** Version 4 added AI temperaments; older games keep the one fixed temperament they were played with. */
+function migrateV3(state: Partial<GameState>): void {
+  for (const lord of Object.values(state.lords ?? {})) lord.temperament = { ...DEFAULT_TEMPERAMENT };
+  state.version = 4;
 }
 
 export function saveGame(state: GameState, storage: Pick<Storage, 'setItem'>): void {

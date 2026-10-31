@@ -6,12 +6,23 @@ import { neighbours, territoryDef } from './map';
 import type { Rng } from './rng';
 import { currentLord } from './state';
 import { playTurn, withRng, type TurnResult } from './turn';
-import type { GameState, LordId, TerritoryId } from './types';
+import type { GameState, LordId, Temperament, TerritoryId } from './types';
 
-/** Attack only when this many times stronger than the defenders (after castle walls). */
-const ATTACK_MARGIN = 1.5;
-/** March home to collect the garrison once it is this fraction of the army's strength. */
-const RESERVE_SHARE = 0.3;
+/**
+ * The middle of the temperament ranges: attack only when 1.5 times stronger
+ * than the defenders, spend half the gold on knights, and march home to spend
+ * the savings once they reach 0.3 of the army's strength.
+ */
+export const DEFAULT_TEMPERAMENT: Temperament = { caution: 1.5, knightShare: 0.5, thrift: 0.3 };
+
+/** Rolls a temperament around the default, so each game's rivals play a little differently. */
+export function rollTemperament(rng: Rng): Temperament {
+  const around = (mid: number, spread: number) => Math.round((mid + (rng.next() * 2 - 1) * spread) * 100) / 100;
+  return { caution: around(1.5, 0.1), knightShare: around(0.5, 0.1), thrift: around(0.3, 0.05) };
+}
+
+/** Targets scoring at least this share of the best one are all considered, weighted by score. */
+const TARGET_SPREAD = 0.8;
 
 function canSustain(state: GameState, lordId: LordId, unit: Unit): boolean {
   const lord = state.lords[lordId];
@@ -34,8 +45,8 @@ export function aiSpend(state: GameState, lordId: LordId): void {
   if (lord.army.catapults < 4 && enemyCastleInReach && canSustain(state, lordId, 'catapult')) {
     buy(state, lordId, 'catapult', 1);
   }
-  // Half the remaining gold on knights, the rest on soldiers.
-  const knightBudget = Math.floor(lord.gold / 2);
+  // Part of the remaining gold on knights (by temperament), the rest on soldiers.
+  const knightBudget = Math.floor(lord.gold * lord.temperament.knightShare);
   for (let spent = 0; spent + PRICES.knight <= knightBudget; spent += PRICES.knight) {
     if (!canSustain(state, lordId, 'knight')) break;
     buy(state, lordId, 'knight', 1);
@@ -70,24 +81,38 @@ export function homeThreatened(state: GameState, lordId: LordId): boolean {
   });
 }
 
+/** Picks a candidate at random, weighted by score; null when there are none. */
+function pickWeighted<T extends { score: number }>(items: T[], rng: Rng): T | null {
+  if (items.length === 0) return null;
+  let roll = rng.next() * items.reduce((sum, c) => sum + c.score, 0);
+  for (const item of items) {
+    roll -= item.score;
+    if (roll < 0) return item;
+  }
+  return items[items.length - 1];
+}
+
 export function chooseAiAction(state: GameState, lordId: LordId, rng: Rng): Action {
   const lord = state.lords[lordId];
   const myStrength = strength(lord.army);
 
-  // Best target among those we can beat comfortably: an enemy home castle
-  // first, since taking it ends that lord; otherwise most income per defender.
+  // Targets we can beat comfortably: an enemy home castle first, since taking
+  // it ends that lord; otherwise one of the best for income per defender.
   // Either way, the other faction is preferred.
-  let best: { target: TerritoryId; score: number; isHome: boolean } | null = null;
+  const candidates: { target: TerritoryId; score: number; isHome: boolean }[] = [];
   for (const target of attackableTerritories(state, lordId)) {
     const defence = defenceRating(state, lordId, target);
-    if (myStrength < defence * ATTACK_MARGIN) continue;
+    if (myStrength < defence * lord.temperament.caution) continue;
     const owner = state.territories[target].owner;
     const isHome = owner !== null && state.lords[owner].home === target;
     const score =
       ((isHome ? 1000 : 0) + territoryDef(target).income / (defence + 1)) * rivalry(state, lordId, owner);
-    if (!best || score > best.score) best = { target, score, isHome };
+    candidates.push({ target, score, isHome });
   }
-  if (best?.isHome) return { type: 'conquer', target: best.target };
+  const homes = candidates.filter((c) => c.isHome).sort((a, b) => b.score - a.score);
+  if (homes.length > 0) return { type: 'conquer', target: homes[0].target };
+  const top = Math.max(...candidates.map((c) => c.score));
+  let best = pickWeighted(candidates.filter((c) => c.score >= top * TARGET_SPREAD), rng);
 
   // A threatened home comes first: march back, or stay put if already there.
   if (homeThreatened(state, lordId)) {
@@ -100,7 +125,7 @@ export function chooseAiAction(state: GameState, lordId: LordId, rng: Rng): Acti
   const goHome =
     lord.armyAt !== lord.home &&
     canSustain(state, lordId, 'soldier') &&
-    lord.gold >= myStrength * RESERVE_SHARE &&
+    lord.gold >= myStrength * lord.temperament.thrift &&
     marchableTerritories(state, lordId).includes(lord.home);
   if (goHome) return { type: 'march', target: lord.home };
   if (best) return { type: 'conquer', target: best.target };

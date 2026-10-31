@@ -14,12 +14,11 @@ describe('turn loop', () => {
 
   it('pays each lord when their turn starts', () => {
     const s = game();
-    const gold = s.lords.montclair.gold;
+    const next = s.turnOrder[1];
+    const gold = s.lords[next].gold;
     endTurn(s);
-    expect(currentLord(s).id).toBe('montclair');
-    expect(s.lords.montclair.gold).toBe(
-      gold + income(s, 'montclair') - upkeep(s.lords.montclair.army),
-    );
+    expect(currentLord(s).id).toBe(next);
+    expect(s.lords[next].gold).toBe(gold + income(s, next) - upkeep(s.lords[next].army));
   });
 
   it('starts a new month after every lord has moved', () => {
