@@ -57,6 +57,14 @@ export const ENTER_MS = 900;
 export const RAID_GUARDS = [2, 2, 3];
 /** One more guard, then the captor himself. */
 export const RESCUE_GUARDS = [2, 2, 2, 3];
+export type RescueStage = 'gate' | 'court' | 'castle';
+/** Where each guard of a rescue is fought: outside the gate, in the court, then inside the castle. */
+export const RESCUE_STAGES: RescueStage[] = ['gate', 'court', 'castle', 'castle'];
+
+/** Which setting the guard at `guardIndex` of a rescue is fought in. */
+export function rescueStage(guardIndex: number): RescueStage {
+  return RESCUE_STAGES[Math.min(guardIndex, RESCUE_STAGES.length - 1)];
+}
 const READY_MIN_MS = 700;
 const READY_SPREAD_MS = 900;
 

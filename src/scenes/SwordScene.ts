@@ -8,6 +8,8 @@ import {
   parry,
   RAID_GUARDS,
   RESCUE_GUARDS,
+  rescueStage,
+  type RescueStage,
   startFight,
   strike,
   STAGGER_MS,
@@ -67,6 +69,9 @@ export class SwordScene extends Phaser.Scene {
   private messageText!: Phaser.GameObjects.Text;
   private heroPips!: Phaser.GameObjects.Graphics;
   private controls: Button[] = [];
+  private placeText?: Phaser.GameObjects.Text;
+  private setting?: RescueStage;
+  private scenery: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super(SceneKeys.Sword);
@@ -96,7 +101,8 @@ export class SwordScene extends Phaser.Scene {
     this.slash = 0;
     this.block = 0;
 
-    this.drawCorridor();
+    this.setting = undefined;
+    this.drawSetting(data.mission === 'rescue' ? rescueStage(0) : 'castle');
     this.hero = this.drawFighter('swordsman_hero', lordColor(this.player.id), 1);
     this.guard = this.drawFighter('swordsman_guard', lordColor(this.foe.id), -1);
     this.hero.body.setPosition(HERO_X, FLOOR_Y);
@@ -108,11 +114,32 @@ export class SwordScene extends Phaser.Scene {
     this.render();
   }
 
-  private drawCorridor(): void {
-    addBackdrop(this, 'corridor');
+  /** Paints the gate (outside the walls), the court (a great hall) or the castle (its corridors); fighters are drawn above at depth 0. */
+  private drawSetting(setting: RescueStage): void {
+    if (this.setting === setting) return;
+    this.setting = setting;
+    for (const o of this.scenery) o.destroy();
+    this.scenery = [];
+    const keep = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
+      this.scenery.push(o);
+      (o as unknown as Phaser.GameObjects.Components.Depth).setDepth(-10);
+      return o;
+    };
+    if (setting !== 'castle' && this.textures.exists(setting)) {
+      keep(addBackdrop(this, setting));
+      return;
+    }
+    keep(addBackdrop(this, 'corridor'));
+    if (setting === 'court') {
+      // Until the court painting exists: the corridor lit as a hall, with a carpet to the dais.
+      keep(this.add.rectangle(0, 0, WIDTH, FLOOR_Y + 30, 0x401020, 0.28).setOrigin(0));
+      keep(this.add.rectangle(0, FLOOR_Y + 4, WIDTH, 26, 0x8a1c24).setOrigin(0));
+      keep(this.add.rectangle(0, FLOOR_Y + 4, WIDTH, 3, 0xd8b040).setOrigin(0));
+      return;
+    }
     // The painted torches flicker.
     for (const [x, y] of TORCHES) {
-      const glow = this.add.ellipse(x, y, 40, 52, 0xffa830, 0.22).setBlendMode(Phaser.BlendModes.ADD);
+      const glow = keep(this.add.ellipse(x, y, 40, 52, 0xffa830, 0.22).setBlendMode(Phaser.BlendModes.ADD));
       this.tweens.add({
         targets: glow,
         scaleY: 0.8,
@@ -123,6 +150,15 @@ export class SwordScene extends Phaser.Scene {
         repeat: -1,
       });
     }
+  }
+
+  /** Fades out and in again while the hero moves on to the next setting of the rescue. */
+  private moveTo(setting: RescueStage): void {
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.drawSetting(setting);
+      this.cameras.main.fadeIn(300, 0, 0, 0);
+    });
   }
 
   /**
@@ -166,6 +202,9 @@ export class SwordScene extends Phaser.Scene {
         ? `Raid on ${this.foe.name}'s castle`
         : `Rescue ${this.state.kidnap!.lady} from ${this.foe.name}`;
     this.add.text(WIDTH / 2, 6, title, style).setOrigin(0.5, 0);
+    if (this.mission.mission === 'rescue') {
+      this.placeText = this.add.text(WIDTH - 8, 6, '', style).setOrigin(1, 0);
+    }
     this.statusText = this.add.text(WIDTH / 2, 24, '', style).setOrigin(0.5, 0);
     this.heroPips = this.add.graphics();
     this.messageText = this.add
@@ -287,6 +326,7 @@ export class SwordScene extends Phaser.Scene {
     this.guard.body.setPosition(x, FLOOR_Y).setAlpha(alpha);
     this.warning.setVisible(g.phase === 'windup').setX(x);
 
+    this.placeText?.setText({ gate: 'The Gate', court: 'The Court', castle: 'The Castle' }[rescueStage(f.guardIndex)]);
     const n = f.guardHps.length;
     const who = f.guardIndex === n - 1 ? (this.mission.mission === 'rescue' ? this.foe.name : 'the captain') : 'a guard';
     this.statusText.setText(`Guard ${f.guardIndex + 1} of ${n}: ${who}   ·   his wounds ${g.maxHp - Math.max(0, g.hp)}/${g.maxHp}`);
@@ -337,6 +377,12 @@ export class SwordScene extends Phaser.Scene {
         break;
       case 'nextGuard':
         sfx(this, 'drum', { volume: 0.4 });
+        if (this.mission.mission === 'rescue' && rescueStage(this.fight.guardIndex) !== this.setting) {
+          const next = rescueStage(this.fight.guardIndex);
+          this.moveTo(next);
+          this.say(next === 'court' ? 'The gate is forced. Into the court!' : 'The court is yours. Up the stairs to the castle keep!');
+          break;
+        }
         this.say(this.fight.guardIndex === this.fight.guardHps.length - 1 && this.mission.mission === 'rescue'
           ? `${this.foe.name} himself bars the way!`
           : 'Another guard comes running!');

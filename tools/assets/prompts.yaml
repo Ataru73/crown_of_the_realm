@@ -73,6 +73,27 @@ assets:
       wall. The bottom quarter of the image is a wooden plank floor seen from slightly
       above. Dim warm torchlight. No people.
 
+  - id: court
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Side view, flat and straight-on like a 2D platform game background, of a medieval
+      royal court: a great hall with tall stone pillars, tapestries and heraldic banners,
+      a long red carpet along the stone floor in the bottom quarter, an empty wooden throne
+      on a dais at the far right, tall arched windows with warm light. No people.
+
+  - id: gate
+    kind: bg
+    size: [640, 400]
+    aspect: landscape 16:10
+    prompt: >-
+      Side view, flat and straight-on like a 2D platform game background, of the outside
+      of a Norman castle at dusk: a long grey stone curtain wall with crenellations across
+      the whole image, a heavy arched wooden door reinforced with iron bands set in the
+      wall at the far right, torches in iron brackets beside it, a cobbled courtyard
+      ground in the bottom quarter, a darkening sky above the battlements. No people.
+
   - id: siege
     kind: bg
     size: [640, 400]

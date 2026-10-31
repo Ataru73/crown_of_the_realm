@@ -129,3 +129,11 @@ describe('the corridor', () => {
     expect(f.events.filter((e) => e.type === 'over')).toHaveLength(1);
   });
 });
+
+describe('rescue stages', () => {
+  it('fights outside the gate, then in the court, then in the castle', async () => {
+    const { rescueStage, RESCUE_GUARDS, RESCUE_STAGES } = await import('../src/model/sword');
+    expect(RESCUE_STAGES).toHaveLength(RESCUE_GUARDS.length);
+    expect(RESCUE_GUARDS.map((_, i) => rescueStage(i))).toEqual(['gate', 'court', 'castle', 'castle']);
+  });
+});
